@@ -707,7 +707,7 @@ const APP = {
   buddha: { n: "Buddha Air", dom: "buddhaair.com", ios: 962660238, url: "https://www.buddhaair.com/" },
   indigo: { n: "IndiGo", dom: "goindigo.in", pkg: "in.goindigo.android", ios: 726070762, url: "https://www.goindigo.in/" },
   uber: { n: "Uber", dom: "uber.com", pkg: "com.ubercab", ios: 368677368, url: "https://m.uber.com/" },
-  ola: { n: "Ola", dom: "olacabs.com", pkg: "com.olacabs.customer", ios: 539179365, url: "https://www.olacabs.com/" },
+  ola: { n: "Ola", dom: "book.olacabs.com", pkg: "com.olacabs.customer", ios: 539179365, url: "https://www.olacabs.com/" },
   rapido: { n: "Rapido", dom: "rapido.bike", pkg: "com.rapido.passenger", ios: 1198464606, url: "https://www.rapido.bike/" },
   pathao: { n: "Pathao", dom: "pathao.com", pkg: "com.pathao.user", ios: 1201700952, url: "https://pathao.com/np/" },
   indrive: { n: "inDrive", dom: "indrive.com", pkg: "sinet.startup.inDriver", ios: 780125801, url: "https://indrive.com/" },
