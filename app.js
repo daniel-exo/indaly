@@ -171,7 +171,7 @@ async function atualizarTempo() {
     TEMPO = { em: Date.now(), porCidade };
     gravarLS(LS_TEMPO, JSON.stringify(TEMPO));
     const r = location.hash;
-    if (r.startsWith("#/mais") || r.startsWith("#/dia") || r.startsWith("#/hoje") || r === "") rotear();
+    if (r.startsWith("#/mais/tempo") || r.startsWith("#/dia") || r.startsWith("#/hoje") || r === "") rotear();
   } catch {}
 }
 const tempoDoDia = (dia) => TEMPO?.porCidade?.[dia.cidade]?.[dia.data] || null;
@@ -210,7 +210,7 @@ function rotuloArquivo(nome) {
 async function abrirDoc(id) {
   const doc = R.docs[id];
   if (!doc || !doc.arquivo) return avisar("Esse documento ainda não está no cofre.");
-  $visorTitulo.textContent = doc.nome.replace(/\.[a-z]+$/i, "");
+  $visorTitulo.textContent = doc.titulo || doc.nome.replace(/\.[a-z]+$/i, "");
   $visorCorpo.innerHTML = '<div class="visor-msg">Abrindo o documento…</div>';
   $visorAbrir.hidden = true;
   $visorComp.hidden = true;
@@ -460,6 +460,7 @@ function telaHoje() {
       <div class="relogios">${tzLocal === "America/Sao_Paulo" ? `<b>${horaEm("America/Sao_Paulo")} São Paulo</b>` : relogios(tzLocal, nomeLocal)}</div>
     </div>
     ${corpo}
+    ${instalado() ? "" : `<a class="linha-lista convite" href="#/mais/instalar"><span class="subapp-icone mini" style="background:#C3122F"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></span><div class="meio"><div class="t">Instale o Indaly como app</div><div class="s">Ícone na tela inicial e sem barra de endereço</div></div><span class="seta">${I.seta}</span></a>`}
   </main>`;
 }
 
@@ -563,7 +564,7 @@ function telaAtividade(iso, n) {
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
       <a class="botao botao-tinta" href="${urlMapa(q)}" target="_blank" rel="noopener">${I.mapa} Abrir no mapa</a>
-      ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
+      ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${a.docs.length > 1 ? "Documentos" : h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
     </div>
     ${a.docs?.length ? `<div class="rotulo">Documentos</div><div class="lista">${a.docs.map((id) => linhaDoc(id)).join("")}</div>` : ""}
     ${a.notas ? `<div class="aviso aviso-pendente" style="background:#fff;color:var(--tinta)"><div><b>Notas</b> · ${h(a.notas)}</div></div>` : ""}
@@ -577,7 +578,7 @@ function linhaDoc(id) {
   const img = d.tipo?.startsWith("image/");
   return `<button type="button" class="linha-lista doc-linha" data-doc="${h(id)}">
     <div class="icone-doc">${I.pdf}<span>${img ? "IMG" : "PDF"}</span></div>
-    <div class="meio"><div class="t">${h(d.nome.replace(/\.[a-z]+$/i, ""))}</div><div class="s">${d.bytes ? Math.max(1, Math.round(d.bytes / 1024)) + " KB · " : ""}<span class="offline" data-offline="${h(d.arquivo || "")}">${I.ok} no cofre</span></div></div>
+    <div class="meio"><div class="t">${h(d.titulo || d.nome.replace(/\.[a-z]+$/i, ""))}</div><div class="s">${d.bytes ? Math.max(1, Math.round(d.bytes / 1024)) + " KB · " : ""}<span class="offline" data-offline="${h(d.arquivo || "")}">${I.ok} no cofre</span></div></div>
   </button>`;
 }
 
@@ -666,7 +667,6 @@ function telaCambio() {
   <main class="tela">
     <div>
       <h1 class="titulo-tela">Câmbio</h1>
-      <div class="sub-tela">Taxas de ${h(dataMedia(CAMBIO.data))} · ${h(CAMBIO.origem)}</div>
     </div>
     <div class="filtros" role="group" aria-label="Direção">
       <button type="button" data-modo="de" aria-pressed="${e.modo === "de"}">Reais → moeda</button>
@@ -679,7 +679,7 @@ function telaCambio() {
       <div class="rapidos">${rapidos.map((n) => `<button type="button" data-rapido="${n}">${n.toLocaleString("pt-BR")}</button>`).join("")}</div>
     </div>
     <div class="lista" id="resultado">${resultado}</div>
-    <div class="nota">${h(CAMBIO.nota || "")}</div>
+    <div class="nota">Taxas efetivas atualizadas em ${h(CAMBIO.data.slice(8, 10) + "/" + CAMBIO.data.slice(5, 7) + "/" + CAMBIO.data.slice(2, 4))}</div>
   </main>`;
   $app.querySelectorAll("[data-modo]").forEach((b) => b.addEventListener("click", () => { e.modo = b.dataset.modo; e.valor = e.modo === "de" ? "100" : "1.000"; if (e.modo === "para" && e.moeda === "USD") e.valor = "100"; telaCambio(); }));
   $app.querySelectorAll("[data-moeda]").forEach((b) => b.addEventListener("click", () => { e.moeda = b.dataset.moeda; telaCambio(); }));
@@ -739,41 +739,108 @@ const FUSOS = [
   { nome: "Kathmandu", tz: "Asia/Kathmandu", pais: "NP", obs: "7 e 8 nov" },
 ];
 
+/* sub-apps da aba Mais: para acrescentar um novo, basta incluir aqui e criar a função da página */
+const SUBAPPS = [
+  { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: () => telaTempo() },
+  { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
+  { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>', tela: () => telaFusos() },
+  { id: "instalar", nome: "Instalar", cor: "#C3122F", soSemInstalar: true, icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18.5h4"/></svg>', tela: () => telaInstalar() },
+];
+const instalado = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+let pedidoInstalar = null;
+window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedidoInstalar = e; if (location.hash.startsWith("#/mais")) rotear(); });
+window.addEventListener("appinstalled", () => { pedidoInstalar = null; avisar("Indaly instalado na tela inicial."); });
+
+function topoSubapp(titulo) {
+  return `<a class="voltar" href="#/mais">${I.voltar} Mais</a><h1 class="titulo-tela">${h(titulo)}</h1>`;
+}
+
 function telaMais() {
+  const itens = SUBAPPS.filter((s) => !(s.soSemInstalar && instalado()));
+  $app.innerHTML = `
+  <main class="tela">
+    <h1 class="titulo-tela">Mais</h1>
+    <div class="subapps">
+      ${itens.map((s) => `<a class="subapp" href="#/mais/${s.id}"><span class="subapp-icone" style="background:${s.cor}">${s.icone}</span><span class="subapp-nome">${h(s.nome)}</span></a>`).join("")}
+    </div>
+  </main>`;
+}
+
+function telaTempo() {
   const hoje = hojeISO();
-  const ref = hoje >= R.inicio && hoje <= R.fim ? new Date() : dataDe("2026-11-05");
   const futuros = R.dias.filter((d) => d.data >= hoje);
   const limite = isoDe(new Date(dataDe(hoje).getTime() + 15 * 86400000));
   const previsao = futuros.map((d) => {
     const t = tempoDoDia(d);
     const p = corDia(d);
+    const bloco = `<div class="data-bloco-mini" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>`;
     if (!t) {
       const libera = isoDe(new Date(dataDe(d.data).getTime() - 15 * 86400000));
-      return `<div class="linha-lista"><div class="data-bloco-mini" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div><div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div></div></div>`;
+      return `<div class="linha-lista">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div></div></div>`;
     }
     const [ic, txt] = climaDe(t.cod);
-    return `<a class="linha-lista" href="#/dia/${d.data}"><div class="data-bloco-mini" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div><div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div></div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
+    return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div></div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
   }).join("");
   $app.innerHTML = `
   <main class="tela">
-    <h1 class="titulo-tela">Mais</h1>
+    ${topoSubapp("Tempo")}
+    <div class="lista">${previsao || '<div class="nota">A viagem já acabou.</div>'}</div>
+    <div class="nota">Previsão para a cidade de cada dia; sai até 16 dias antes. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+  </main>`;
+}
 
-    <h2 class="secao">Apps úteis</h2>
+function telaApps() {
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Apps úteis")}
     ${APPS.map((g) => `<div class="rotulo">${h(g.grupo)}</div><div class="lista">${g.itens.map((a) => `
       <div class="linha-lista app-linha">
         <a class="app-abrir" href="${h(a.url)}" target="_blank" rel="noopener"><div class="app-ini" aria-hidden="true">${h(a.n[0])}</div><div class="meio"><div class="t">${h(a.n)}</div><div class="s">${h(a.d)}</div></div></a>
         <a class="app-loja" href="${h(urlLoja(a.busca))}" aria-label="Instalar ${h(a.n)}">Instalar</a>
       </div>`).join("")}</div>`).join("")}
+  </main>`;
+}
 
-    <h2 class="secao" style="margin-top:14px">Fusos horários</h2>
+function telaFusos() {
+  const hoje = hojeISO();
+  const ref = hoje >= R.inicio && hoje <= R.fim ? new Date() : dataDe("2026-11-05");
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Fusos")}
     <div class="lista">${FUSOS.map((f) => `
       <div class="linha-lista"><i class="barra-pais" style="background:${PAISES[f.pais].cor}"></i><div class="meio"><div class="t">${h(f.nome)}</div><div class="s">${h(utcTexto(f.tz, ref))}${f.pais !== "BR" ? " · " + h(difSP(f.tz, ref)) : ""} · ${h(f.obs)}</div></div><div class="hora-fuso" data-tz="${f.tz}">${horaEm(f.tz)}</div></div>`).join("")}</div>
-    <div class="nota">Horários de agora. Diferenças calculadas para as datas da viagem (a Itália estará no horário de inverno).</div>
-
-    <h2 class="secao" style="margin-top:14px">Previsão do tempo</h2>
-    <div class="lista">${previsao || '<div class="nota">A viagem já acabou.</div>'}</div>
-    <div class="nota">Previsão da Open-Meteo para a cidade de cada dia; sai até 16 dias antes. ${TEMPO ? "Atualizada " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+    <div class="nota">Horário de agora em cada lugar. As diferenças já consideram as datas da viagem (a Itália estará no horário de inverno).</div>
   </main>`;
+}
+
+function telaInstalar() {
+  let corpo;
+  if (instalado()) {
+    corpo = `<div class="aviso aviso-alerta" style="box-shadow:inset 0 0 0 1.5px var(--verde)"><div>O Indaly já está instalado neste celular.</div></div>`;
+  } else if (pedidoInstalar) {
+    corpo = `<p class="texto">Um toque e o Indaly vai para a tela inicial, com o ícone laranja e sem a barra de endereço.</p>
+      <button type="button" class="botao botao-tinta" id="instalar-agora">Instalar o Indaly</button>`;
+  } else if (ehIOS()) {
+    corpo = `<ol class="passos">
+      <li>Abra este endereço no <b>Safari</b> (no Chrome do iPhone não funciona).</li>
+      <li>Toque em <b>Compartilhar</b> (o quadrado com a seta para cima).</li>
+      <li>Escolha <b>Adicionar à Tela de Início</b> e confirme.</li>
+    </ol>`;
+  } else {
+    corpo = `<ol class="passos">
+      <li>Se já existe um ícone do Indaly com o símbolo do Chrome, apague esse atalho.</li>
+      <li>Abra este endereço no <b>Chrome</b> e toque no menu <b>⋮</b>.</li>
+      <li>Escolha <b>Instalar app</b>. Se aparecer "Adicionar à tela inicial", toque e escolha <b>Instalar</b>, não "Criar atalho".</li>
+    </ol>
+    <p class="texto">Instalado de verdade, o ícone fica laranja, sem o símbolo do Chrome, e o app abre sem a barra de endereço.</p>`;
+  }
+  $app.innerHTML = `<main class="tela">${topoSubapp("Instalar")}${corpo}</main>`;
+  document.getElementById("instalar-agora")?.addEventListener("click", async () => {
+    pedidoInstalar.prompt();
+    await pedidoInstalar.userChoice;
+    pedidoInstalar = null;
+    rotear();
+  });
 }
 setInterval(() => {
   document.querySelectorAll(".hora-fuso").forEach((el) => (el.textContent = horaEm(el.dataset.tz)));
@@ -792,7 +859,7 @@ function rotear() {
   if (rota === "roteiro") { marcarAba("roteiro"); return telaRoteiro(); }
   if (rota === "carteira") { marcarAba("carteira"); return telaCarteira(); }
   if (rota === "cambio") { marcarAba("cambio"); return telaCambio(); }
-  if (rota === "mais") { marcarAba("mais"); return telaMais(); }
+  if (rota === "mais") { marcarAba("mais"); const s = SUBAPPS.find((x) => x.id === a); return s ? s.tela() : telaMais(); }
   marcarAba("hoje");
   telaHoje();
 }
