@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v3";
+const VERSAO = "indaly-v4";
 const CASCA = [
   "./",
   "index.html",
@@ -62,7 +62,7 @@ async function cachePrimeiro(req) {
   const salvo = await cache.match(req);
   if (salvo) return salvo;
   const res = await fetch(req);
-  if (res.ok) await cache.put(req, res.clone());
+  if (res.ok || res.type === "opaque") await cache.put(req, res.clone());
   return res;
 }
 
@@ -82,6 +82,7 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET") return;
   const url = new URL(req.url);
+  if (url.hostname.endsWith("gstatic.com") && url.pathname.startsWith("/faviconV2")) return e.respondWith(cachePrimeiro(req));
   if (url.origin !== self.location.origin) return;
   if (DOCS.test(url.pathname)) return e.respondWith(cachePrimeiro(req));
   if (VIVOS.test(url.pathname)) return e.respondWith(redePrimeiro(req));

@@ -333,7 +333,7 @@ function cartaoHospedagem(hosp, dia) {
   const aviao = hosp.nome === "Avião";
   const botoes = [];
   if (hosp.docs?.length) botoes.push(`<button type="button" class="botao botao-papel" data-doc="${h(hosp.docs[0])}">${I.bilhete} Reserva</button>`);
-  if (!aviao && hosp.endereco && hosp.endereco !== "Casa") botoes.push(`<a class="botao botao-contorno" href="${urlMapa(hosp.nome + ", " + hosp.endereco)}" target="_blank" rel="noopener">${I.mapa} Mapa</a>`);
+  if (!aviao && hosp.endereco && hosp.endereco !== "Casa") botoes.push(`<button type="button" class="botao botao-contorno" data-ir="${dia.data}|h">${I.carro} Ir até lá</button>`);
   if (hosp.tel) botoes.push(`<a class="botao botao-contorno" href="tel:${h(hosp.tel.replace(/\s/g, ""))}">${I.tel} Ligar</a>`);
   return `
   <section class="hospedagem-bloco" aria-label="Onde dormir">
@@ -445,7 +445,7 @@ function telaHoje() {
         <div class="s">${h([a.hora, a.local || a.horario].filter(Boolean).join(" · "))}</div>
         <div class="botoes">
           <a class="botao botao-papel" href="#/dia/${dia.data}/${destaque.n}">${I.seta} Detalhes</a>
-          ${a.docs?.length ? `<button type="button" class="botao botao-contorno" data-doc="${h(a.docs[0])}">${I.bilhete} Documento</button>` : (a.mapa || a.endereco ? `<a class="botao botao-contorno" href="${urlMapa(a.mapa || a.endereco)}" target="_blank" rel="noopener">${I.pino} Mapa</a>` : "")}
+          ${a.docs?.length ? `<button type="button" class="botao botao-contorno" data-doc="${h(a.docs[0])}">${I.bilhete} Documento</button>` : (a.mapa || a.endereco ? `<button type="button" class="botao botao-contorno" data-ir="${dia.data}|${destaque.n}">${I.carro} Ir até lá</button>` : "")}
         </div>
       </div>
       ${depois.length ? `<div style="display:flex;justify-content:space-between;align-items:baseline"><h2 class="secao">Depois, hoje</h2><a href="#/dia/${dia.data}" style="font-size:13px;font-weight:600;color:var(--tinta)">Ver o dia todo</a></div>
@@ -563,7 +563,7 @@ function telaAtividade(iso, n) {
     ${a.status === "pendente" ? `<div class="aviso aviso-pendente">${I.pendente}<div><b>Pendência:</b> ${h(a.pendencia || "a resolver")}</div></div>` : ""}
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
-      <a class="botao botao-tinta" href="${urlMapa(q)}" target="_blank" rel="noopener">${I.mapa} Abrir no mapa</a>
+      <button type="button" class="botao botao-tinta" data-ir="${dia.data}|${n}">${I.carro} Ir até lá</button>
       ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${a.docs.length > 1 ? "Documentos" : h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
     </div>
     ${a.docs?.length ? `<div class="rotulo">Documentos</div><div class="lista">${a.docs.map((id) => linhaDoc(id)).join("")}</div>` : ""}
@@ -696,41 +696,123 @@ function telaCambio() {
 }
 
 /* ---------- Mais ---------- */
+/* apps: pkg = pacote Android (abre o app ou a Play Store); ios = id na App Store (a loja mostra "Abrir" se já estiver instalado) */
+const APP = {
+  wise: { n: "Wise", dom: "wise.com", pkg: "com.transferwise.android", ios: 612261027, url: "https://wise.com/" },
+  nubank: { n: "Nubank", dom: "nubank.com.br", pkg: "com.nu.production", ios: 814456780, url: "https://nubank.com.br/" },
+  itau: { n: "Itaú", dom: "itau.com.br", pkg: "com.itau", ios: 474505665, url: "https://www.itau.com.br/" },
+  splitwise: { n: "Splitwise", dom: "splitwise.com", pkg: "com.Splitwise.SplitwiseMobile", ios: 458023433, url: "https://secure.splitwise.com/" },
+  ita: { n: "ITA Airways", dom: "ita-airways.com", ios: 1589844779, url: "https://www.ita-airways.com/" },
+  airindia: { n: "Air India", dom: "airindia.com", pkg: "com.bets.airindia.ui", ios: 932302964, url: "https://www.airindia.com/" },
+  buddha: { n: "Buddha Air", dom: "buddhaair.com", ios: 962660238, url: "https://www.buddhaair.com/" },
+  indigo: { n: "IndiGo", dom: "goindigo.in", pkg: "in.goindigo.android", ios: 726070762, url: "https://www.goindigo.in/" },
+  uber: { n: "Uber", dom: "uber.com", pkg: "com.ubercab", ios: 368677368, url: "https://m.uber.com/" },
+  ola: { n: "Ola", dom: "olacabs.com", pkg: "com.olacabs.customer", ios: 539179365, url: "https://www.olacabs.com/" },
+  rapido: { n: "Rapido", dom: "rapido.bike", pkg: "com.rapido.passenger", ios: 1198464606, url: "https://www.rapido.bike/" },
+  pathao: { n: "Pathao", dom: "pathao.com", pkg: "com.pathao.user", ios: 1201700952, url: "https://pathao.com/np/" },
+  indrive: { n: "inDrive", dom: "indrive.com", pkg: "sinet.startup.inDriver", ios: 780125801, url: "https://indrive.com/" },
+  trenitalia: { n: "Trenitalia", dom: "trenitalia.com", pkg: "com.lynxspa.prontotreno", ios: 331050847, url: "https://www.trenitalia.com/" },
+  freenow: { n: "FREENOW", dom: "free-now.com", pkg: "taxi.android.client", ios: 357852748, url: "https://www.free-now.com/" },
+  maps: { n: "Google Maps", dom: "maps.google.com", pkg: "com.google.android.apps.maps", ios: 585027354, url: "https://maps.google.com/" },
+  waze: { n: "Waze", dom: "waze.com", pkg: "com.waze", ios: 323229106, url: "https://www.waze.com/" },
+  tradutor: { n: "Google Tradutor", dom: "translate.google.com", pkg: "com.google.android.apps.translate", ios: 414706506, url: "https://translate.google.com/" },
+};
 const APPS = [
-  { grupo: "Dinheiro", itens: [
-    { n: "Wise", d: "Conta global e cartão", url: "https://wise.com/", busca: "Wise" },
-    { n: "Nubank", d: "Conta global", url: "https://nubank.com.br/", busca: "Nubank" },
-    { n: "Itaú", d: "Banco", url: "https://www.itau.com.br/", busca: "Itaú" },
-    { n: "Splitwise", d: "Dividir as despesas do grupo", url: "https://secure.splitwise.com/", busca: "Splitwise" },
-  ]},
-  { grupo: "Companhias aéreas", itens: [
-    { n: "ITA Airways", d: "Brasil ⇄ Roma ⇄ Delhi (a antiga Alitalia)", url: "https://www.ita-airways.com/", busca: "ITA Airways" },
-    { n: "Air India", d: "Delhi → Kathmandu", url: "https://www.airindia.com/", busca: "Air India" },
-    { n: "Buddha Air", d: "Kathmandu → Varanasi", url: "https://www.buddhaair.com/", busca: "Buddha Air" },
-    { n: "IndiGo", d: "Varanasi → Delhi", url: "https://www.goindigo.in/", busca: "IndiGo" },
-  ]},
-  { grupo: "Transporte na Índia", itens: [
-    { n: "Uber", d: "Carro e tuk-tuk (Uber Auto)", url: "https://m.uber.com/", busca: "Uber" },
-    { n: "Ola", d: "Carro e tuk-tuk, muito usado na Índia", url: "https://www.olacabs.com/", busca: "Ola" },
-    { n: "Rapido", d: "Moto-táxi, tuk-tuk e carro", url: "https://www.rapido.bike/", busca: "Rapido" },
-  ]},
-  { grupo: "Transporte no Nepal", itens: [
-    { n: "Pathao", d: "O mais usado em Kathmandu", url: "https://pathao.com/np/", busca: "Pathao" },
-    { n: "inDrive", d: "Você propõe o preço da corrida", url: "https://indrive.com/", busca: "inDrive" },
-  ]},
-  { grupo: "Transporte na Itália", itens: [
-    { n: "Trenitalia", d: "Trens, inclusive o Leonardo Express", url: "https://www.trenitalia.com/", busca: "Trenitalia" },
-    { n: "FREENOW", d: "Táxi em Roma", url: "https://www.free-now.com/", busca: "FREENOW" },
-  ]},
-  { grupo: "Úteis", itens: [
-    { n: "Google Maps", d: "Baixe os mapas das cidades para usar offline", url: "https://maps.google.com/", busca: "Google Maps" },
-    { n: "Google Tradutor", d: "Baixe hindi, nepalês e italiano para usar offline", url: "https://translate.google.com/", busca: "Google Tradutor" },
-  ]},
+  { grupo: "Dinheiro", itens: [["wise", "Conta global e cartão"], ["nubank", "Conta global"], ["itau", "Banco"], ["splitwise", "Dividir as despesas do grupo"]] },
+  { grupo: "Companhias aéreas", itens: [["ita", "Brasil ⇄ Roma ⇄ Delhi (a antiga Alitalia)"], ["airindia", "Delhi → Kathmandu"], ["buddha", "Kathmandu → Varanasi"], ["indigo", "Varanasi → Delhi"]] },
+  { grupo: "Transporte na Índia", itens: [["uber", "Carro e tuk-tuk (Uber Auto)"], ["ola", "Carro e tuk-tuk, muito usado na Índia"], ["rapido", "Moto-táxi, tuk-tuk e carro"]] },
+  { grupo: "Transporte no Nepal", itens: [["pathao", "O mais usado em Kathmandu"], ["indrive", "Você propõe o preço da corrida"]] },
+  { grupo: "Transporte na Itália", itens: [["trenitalia", "Trens, inclusive o Leonardo Express"], ["freenow", "Táxi em Roma"], ["uber", "Carro com motorista em Roma"]] },
+  { grupo: "Mapas e idiomas", itens: [["maps", "Baixe os mapas das cidades para usar offline"], ["waze", "Rotas de carro"], ["tradutor", "Baixe hindi, nepalês e italiano para usar offline"]] },
 ];
 const ehIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const urlLoja = (termo) => ehIOS()
-  ? "itms-apps://search.itunes.apple.com/WebObjects/MZSearch.woa/wa/search?media=software&term=" + encodeURIComponent(termo)
-  : "https://play.google.com/store/search?q=" + encodeURIComponent(termo) + "&c=apps";
+const ehAndroid = () => /Android/i.test(navigator.userAgent);
+function urlApp(id) {
+  const a = APP[id];
+  if (ehAndroid()) {
+    if (!a.pkg) return "https://play.google.com/store/search?c=apps&q=" + encodeURIComponent(a.n);
+    const loja = "https://play.google.com/store/apps/details?id=" + a.pkg;
+    return `intent:#Intent;action=android.intent.action.MAIN;category=android.intent.category.LAUNCHER;package=${a.pkg};S.browser_fallback_url=${encodeURIComponent(loja)};end`;
+  }
+  if (ehIOS()) return "https://apps.apple.com/br/app/id" + a.ios;
+  return a.url;
+}
+const logoApp = (id, classe = "app-logo") => {
+  const a = APP[id];
+  return `<span class="${classe}" aria-hidden="true"><img src="https://t3.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&fallback_opts=TYPE,SIZE,URL&size=128&url=https://${a.dom}" alt="" loading="lazy" onload="this.classList.add('ok')" onerror="this.remove()"><b>${h(a.n[0])}</b></span>`;
+};
+
+/* "Ir até lá": rotas e corridas para o lugar da atividade */
+const CORRIDAS = { IN: ["uber", "ola", "rapido"], NP: ["pathao", "indrive"], IT: ["uber", "freenow"], BR: ["uber"] };
+function lugarDe(chave) {
+  const [iso, k] = chave.split("|");
+  const dia = R.dias[idxDia(iso)];
+  if (!dia) return null;
+  if (k === "h") {
+    const hp = dia.hospedagem;
+    return { nome: hp.nome, endereco: hp.endereco, busca: hp.nome + ", " + hp.endereco, coords: hp.coords, pais: dia.pais };
+  }
+  const a = dia.atividades[Number(k)];
+  return { nome: a.titulo, endereco: a.endereco || a.local || dia.cidade, busca: a.mapa || a.endereco || (a.titulo + ", " + dia.cidade), coords: a.coords, pais: dia.pais };
+}
+function abrirIrAte(chave) {
+  const l = lugarDe(chave);
+  if (!l) return;
+  const [lat, lon] = l.coords || [];
+  const temCoord = lat != null;
+  const destino = temCoord ? `${lat},${lon}` : l.busca;
+  const opcoes = [
+    { id: "maps", t: "Rota no Google Maps", s: "A pé, de carro ou transporte", url: "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(destino) },
+    { id: "waze", t: "Rota no Waze", s: "De carro", url: temCoord ? `https://waze.com/ul?ll=${lat},${lon}&navigate=yes` : "https://waze.com/ul?navigate=yes&q=" + encodeURIComponent(l.busca) },
+  ];
+  for (const id of CORRIDAS[l.pais] || []) {
+    if (id === "uber") {
+      const p = new URLSearchParams({ action: "setPickup", pickup: "my_location", "dropoff[nickname]": l.nome, "dropoff[formatted_address]": l.endereco || l.busca });
+      if (temCoord) { p.set("dropoff[latitude]", lat); p.set("dropoff[longitude]", lon); }
+      opcoes.push({ id, t: "Pedir um Uber", s: "Já com o destino preenchido", url: "https://m.uber.com/ul/?" + p.toString() });
+    } else {
+      opcoes.push({ id, t: "Pedir no " + APP[id].n, s: "Copia o endereço e abre o app", url: urlApp(id), copiar: true });
+    }
+  }
+  fecharFolha();
+  const el = document.createElement("div");
+  el.className = "folha-fundo";
+  el.innerHTML = `
+    <div class="folha" role="dialog" aria-modal="true" aria-labelledby="folha-titulo">
+      <div class="folha-alca" aria-hidden="true"></div>
+      <h2 id="folha-titulo">Ir até lá</h2>
+      <div class="folha-destino"><b>${h(l.nome)}</b><span>${h(l.endereco || "")}</span></div>
+      <div class="lista">
+        ${opcoes.map((o, i) => `<a class="linha-lista app-linha-ir" href="${h(o.url)}" ${o.url.startsWith("intent:") ? "" : 'target="_blank" rel="noopener"'} data-opcao="${i}">${logoApp(o.id)}<div class="meio"><div class="t">${h(o.t)}</div><div class="s">${h(o.s)}</div></div><span class="seta">${I.seta}</span></a>`).join("")}
+      </div>
+      <div class="botoes" style="grid-template-columns:1fr 1fr">
+        <button type="button" class="botao botao-claro" id="folha-copiar">Copiar endereço</button>
+        <button type="button" class="botao botao-tinta" id="folha-fechar">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(el);
+  document.body.style.overflow = "hidden";
+  const copiar = async () => {
+    try { await navigator.clipboard.writeText(l.endereco && l.endereco !== l.nome ? `${l.nome}, ${l.endereco}` : l.busca); return true; } catch { return false; }
+  };
+  el.addEventListener("click", (e) => { if (e.target === el) fecharFolha(); });
+  el.querySelector("#folha-fechar").addEventListener("click", fecharFolha);
+  el.querySelector("#folha-copiar").addEventListener("click", async () => { avisar((await copiar()) ? "Endereço copiado." : "Não consegui copiar."); });
+  el.querySelectorAll("[data-opcao]").forEach((a) => a.addEventListener("click", () => {
+    const o = opcoes[Number(a.dataset.opcao)];
+    if (o.copiar) { copiar(); avisar("Endereço copiado: cole como destino no app."); }
+  }));
+  el.querySelector("#folha-fechar").focus();
+}
+function fecharFolha() {
+  document.querySelector(".folha-fundo")?.remove();
+  if ($visor.hidden) document.body.style.overflow = "";
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest("[data-ir]");
+  if (b) { e.preventDefault(); abrirIrAte(b.dataset.ir); }
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") fecharFolha(); });
 
 const FUSOS = [
   { nome: "São Paulo", tz: "America/Sao_Paulo", pais: "BR", obs: "Casa" },
@@ -793,11 +875,9 @@ function telaApps() {
   $app.innerHTML = `
   <main class="tela">
     ${topoSubapp("Apps úteis")}
-    ${APPS.map((g) => `<div class="rotulo">${h(g.grupo)}</div><div class="lista">${g.itens.map((a) => `
-      <div class="linha-lista app-linha">
-        <a class="app-abrir" href="${h(a.url)}" target="_blank" rel="noopener"><div class="app-ini" aria-hidden="true">${h(a.n[0])}</div><div class="meio"><div class="t">${h(a.n)}</div><div class="s">${h(a.d)}</div></div></a>
-        <a class="app-loja" href="${h(urlLoja(a.busca))}" aria-label="Instalar ${h(a.n)}">Instalar</a>
-      </div>`).join("")}</div>`).join("")}
+    <div class="nota">Toque para abrir o app. Se ainda não estiver instalado, abre a página dele na loja.</div>
+    ${APPS.map((g) => `<div class="rotulo">${h(g.grupo)}</div><div class="lista">${g.itens.map(([id, d]) => `
+      <a class="linha-lista app-linha-ir" href="${h(urlApp(id))}" ${urlApp(id).startsWith("intent:") ? "" : 'target="_blank" rel="noopener"'}>${logoApp(id)}<div class="meio"><div class="t">${h(APP[id].n)}</div><div class="s">${h(d)}</div></div><span class="seta">${I.externo}</span></a>`).join("")}</div>`).join("")}
   </main>`;
 }
 
