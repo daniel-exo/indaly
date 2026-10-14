@@ -1,0 +1,8 @@
+{
+  "name": "indaly",
+  "private": true,
+  "description": "App da viagem Índia, Nepal e Itália (PWA estático no GitHub Pages).",
+  "type": "module",
+  "scripts": { "montar": "node ferramentas/montar.mjs" },
+  "devDependencies": { "age-encryption": "0.2.4" }
+}
