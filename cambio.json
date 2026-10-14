@@ -1,0 +1,13 @@
+{
+ "data": "2026-10-14",
+ "fonte": "open.er-api.com",
+ "reais_por_unidade": {
+  "USD": 5.015045,
+  "EUR": 5.611231,
+  "INR": 0.05266,
+  "NPR": 0.032916,
+  "BRL": 1
+ },
+ "origem": "cotação de mercado",
+ "nota": "Taxas de mercado provisórias. Quando quiser, mande ao Claude as taxas do app de conversão de vocês e ele atualiza aqui."
+}
