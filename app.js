@@ -1,5 +1,7 @@
 import { Decrypter } from "./vendor/age.js";
 
+const VERSAO_APP = "v5";
+
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
 const $abas = document.getElementById("abas");
@@ -204,6 +206,8 @@ function rotuloArquivo(nome) {
   const m = nome.match(/\((Bilhete|Recibo|recibo|Daniel|Marina)/);
   if (m) return m[1][0].toUpperCase() + m[1].slice(1);
   if (/ETA/.test(nome)) return "e-Visa";
+  if (/travel_insurance/i.test(nome)) return "Apólice";
+  if (/certificado_de_elegibilidade/i.test(nome)) return "Certificado";
   return "Documento";
 }
 
@@ -585,11 +589,12 @@ function linhaDoc(id) {
 const CATS = [
   { id: "todos", nome: "Todos" },
   { id: "viagem", nome: "Vistos e saúde" },
+  { id: "seguro", nome: "Seguro" },
   { id: "passagem", nome: "Passagens" },
   { id: "hotel", nome: "Hospedagens" },
   { id: "passeio", nome: "Passeios" },
 ];
-const ICONE_CAT = { viagem: I.id, passagem: I.aviao, hotel: I.cama, passeio: I.bilhete };
+const ICONE_CAT = { seguro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>', viagem: I.id, passagem: I.aviao, hotel: I.cama, passeio: I.bilhete };
 
 function itemCarteira(c) {
   const tint = c.data ? (PAISES[R.dias.find((d) => d.data === c.data)?.pais] || PAISES.BR).tint : "#E3E6F0";
@@ -826,6 +831,7 @@ const SUBAPPS = [
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: () => telaTempo() },
   { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>', tela: () => telaFusos() },
+  { id: "atualizar", nome: "Atualizar", cor: "#565D78", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4.2L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.8 4.2l1.2-1.7M20 20v-4.5h-4.5"/></svg>', tela: () => telaAtualizar() },
   { id: "instalar", nome: "Instalar", cor: "#C3122F", soSemInstalar: true, icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18.5h4"/></svg>', tela: () => telaInstalar() },
 ];
 const instalado = () => window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
@@ -891,6 +897,38 @@ function telaFusos() {
       <div class="linha-lista"><i class="barra-pais" style="background:${PAISES[f.pais].cor}"></i><div class="meio"><div class="t">${h(f.nome)}</div><div class="s">${h(utcTexto(f.tz, ref))}${f.pais !== "BR" ? " · " + h(difSP(f.tz, ref)) : ""} · ${h(f.obs)}</div></div><div class="hora-fuso" data-tz="${f.tz}">${horaEm(f.tz)}</div></div>`).join("")}</div>
     <div class="nota">Horário de agora em cada lugar. As diferenças já consideram as datas da viagem (a Itália estará no horário de inverno).</div>
   </main>`;
+}
+
+function telaAtualizar() {
+  const quando = R?.atualizado_em ? new Date(R.atualizado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "—";
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Atualizar")}
+    <p class="texto">O app se atualiza sozinho quando abre com internet. Se alguma mudança ainda não apareceu, toque abaixo: ele baixa tudo de novo e reabre.</p>
+    <div class="info">
+      <div class="info-linha">${I.relogio}<div><div class="r">Roteiro deste celular</div><div class="v">atualizado em ${h(quando)}</div></div></div>
+      <div class="info-linha">${I.ok}<div><div class="r">Versão do app</div><div class="v">${h(VERSAO_APP)}</div></div></div>
+    </div>
+    <button type="button" class="botao botao-tinta" id="forcar-atualizacao">Atualizar agora</button>
+  </main>`;
+  document.getElementById("forcar-atualizacao").addEventListener("click", forcarAtualizacao);
+}
+async function forcarAtualizacao() {
+  if (!navigator.onLine) return avisar("Sem internet agora. Tente quando estiver conectado.");
+  const b = document.getElementById("forcar-atualizacao");
+  if (b) { b.disabled = true; b.textContent = "Atualizando…"; }
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    await Promise.race([reg?.update(), new Promise((ok) => setTimeout(ok, 4000))]);
+    if ("caches" in window) {
+      const nomes = await caches.keys();
+      await Promise.all(nomes.filter((n) => n.endsWith("-casca")).map((n) => caches.delete(n)));
+      const dados = await caches.open("indaly-dados");
+      for (const arq of ["cofre/roteiro.age", "cofre/versao.json", "cofre/chave.age", "cambio.json"]) await dados.delete(new URL(arq, location.href).href);
+    }
+  } catch (e) { console.error(e); }
+  history.replaceState(null, "", location.pathname + "#/hoje");
+  location.reload();
 }
 
 function telaInstalar() {

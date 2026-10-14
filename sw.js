@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v4";
+const VERSAO = "indaly-v5";
 const CASCA = [
   "./",
   "index.html",
@@ -25,7 +25,11 @@ const CACHE_CASCA = VERSAO + "-casca";
 const CACHE_DADOS = "indaly-dados"; // sobrevive a atualizações do app
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE_CASCA).then((c) => c.addAll(CASCA)).then(() => self.skipWaiting()));
+  e.waitUntil(
+    caches.open(CACHE_CASCA)
+      .then((c) => Promise.all(CASCA.map((u) => fetch(u, { cache: "reload" }).then((r) => (r.ok ? c.put(u, r) : null)))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (e) => {
@@ -66,16 +70,19 @@ async function cachePrimeiro(req) {
   return res;
 }
 
+// App (html, js, css): tenta a rede primeiro para as mudanças aparecerem logo; sem rede, usa o guardado.
 async function casca(req) {
   const cache = await caches.open(CACHE_CASCA);
-  const salvo = await cache.match(req, { ignoreSearch: true });
-  const daRede = fetch(req)
-    .then((res) => {
-      if (res.ok) cache.put(req, res.clone());
-      return res;
-    })
-    .catch(() => null);
-  return salvo || (await daRede) || (await cache.match("index.html"));
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 4000);
+    const res = await fetch(req, { cache: "no-cache", signal: ctrl.signal });
+    clearTimeout(t);
+    if (res.ok) cache.put(req, res.clone());
+    return res;
+  } catch (err) {
+    return (await cache.match(req, { ignoreSearch: true })) || (await cache.match("index.html"));
+  }
 }
 
 self.addEventListener("fetch", (e) => {
@@ -86,6 +93,7 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== self.location.origin) return;
   if (DOCS.test(url.pathname)) return e.respondWith(cachePrimeiro(req));
   if (VIVOS.test(url.pathname)) return e.respondWith(redePrimeiro(req));
+  if (/\/(fonts|vendor|icons)\//.test(url.pathname)) return e.respondWith(caches.open(CACHE_CASCA).then(async (c) => (await c.match(req)) || fetch(req).then((r) => { if (r.ok) c.put(req, r.clone()); return r; })));
   if (req.mode === "navigate") return e.respondWith(casca(new Request("index.html")));
   e.respondWith(casca(req));
 });
