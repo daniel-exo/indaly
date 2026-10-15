@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v12";
+const VERSAO_APP = "v13";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -571,6 +571,107 @@ function telaBloqueio(msg = "") {
   setTimeout(() => document.getElementById("senha")?.focus(), 50);
 }
 
+/* ficha curta do lugar */
+function fichaLugar(f) {
+  const lin = [];
+  if (f.ver) lin.push(["Não perder", f.ver]);
+  if (f.tempo) lin.push(["Quanto tempo", f.tempo]);
+  if (f.dica) lin.push(["Dica", f.dica]);
+  return `<section class="ficha-lugar">
+    <div class="rotulo">Sobre o lugar</div>
+    <p>${h(f.sobre)}</p>
+    ${lin.length ? `<dl>${lin.map(([r, v]) => `<div><dt>${r}</dt><dd>${h(v)}</dd></div>`).join("")}</dl>` : ""}
+  </section>`;
+}
+
+/* rota do dia no Google Maps: paradas na ordem do roteiro */
+const pontoDe = (a, cidade) => (a?.coords ? `${a.coords[0]},${a.coords[1]}` : a?.mapa ? `${a.mapa}, ${cidade}` : null);
+const pontoHosp = (hp) => (!hp || hp.nome === "Avião" ? null : hp.coords ? `${hp.coords[0]},${hp.coords[1]}` : hp.endereco ? `${hp.nome}, ${hp.endereco}` : null);
+function rotaDoDia(dia, i) {
+  const trechos = [[]];
+  for (const a of dia.atividades) {
+    const p = pontoDe(a, dia.cidade);
+    if (p) trechos[trechos.length - 1].push({ p, t: a.titulo });
+    if (a.voo) trechos.push([]);
+  }
+  let k = 0;
+  trechos.forEach((t, j) => { if (t.length >= trechos[k].length) k = j; });
+  let pontos = trechos[k].slice();
+  if (k === 0) { const o = pontoHosp(R.dias[i - 1]?.hospedagem); if (o && !(dia.atividades[0]?.titulo || "").startsWith("Chegada")) pontos.unshift({ p: o, t: "hospedagem" }); }
+  if (k === trechos.length - 1) { const f = pontoHosp(dia.hospedagem); if (f) pontos.push({ p: f, t: "hospedagem" }); }
+  pontos = pontos.filter((x, j) => j === 0 || x.p !== pontos[j - 1].p);
+  if (pontos.length < 2) return null;
+  if (pontos.length > 11) pontos = [pontos[0], ...pontos.slice(1, 10), pontos[pontos.length - 1]];
+  const meio = pontos.slice(1, -1).map((x) => x.p).join("|");
+  const url = "https://www.google.com/maps/dir/?api=1&origin=" + encodeURIComponent(pontos[0].p) + "&destination=" + encodeURIComponent(pontos[pontos.length - 1].p) + (meio ? "&waypoints=" + encodeURIComponent(meio) : "");
+  return { url, n: pontos.length };
+}
+function acoesDia(dia, i) {
+  const r = rotaDoDia(dia, i);
+  if (!dia.nota && !r) return "";
+  return `<div class="dia-acoes">
+    ${dia.nota ? `<div class="aviso aviso-pendente">${I.pendente}<div>${h(dia.nota)}</div></div>` : ""}
+    ${r ? `<a class="botao botao-claro rota-dia" href="${h(r.url)}" target="_blank" rel="noopener">${I.mapa} Rota do dia no mapa <small>${r.n} paradas</small></a>` : ""}
+  </div>`;
+}
+
+/* dia de voo: horários do aeroporto */
+const TZ_AEROPORTO = { GRU: "America/Sao_Paulo", FCO: "Europe/Rome", DEL: "Asia/Kolkata", VNS: "Asia/Kolkata", KTM: "Asia/Kathmandu" };
+function agoraApp() {
+  const f = new URLSearchParams(location.search).get("agora"); // teste: ?agora=2026-11-10T18:30Z
+  const d = f ? new Date(f) : new Date();
+  return isNaN(d) ? new Date() : d;
+}
+function instante(iso, hm, tz) {
+  const [y, m, d] = iso.split("-").map(Number), [hh, mm] = hm.split(":").map(Number);
+  const chute = Date.UTC(y, m - 1, d, hh, mm);
+  return new Date(chute - offsetMin(tz, new Date(chute)) * 60000);
+}
+function vooEmFoco(agora) {
+  for (const dia of R.dias) {
+    for (const [n, a] of dia.atividades.entries()) {
+      const v = a.voo;
+      if (!v) continue;
+      const tz = TZ_AEROPORTO[v.de] || dia.fuso;
+      const sai = instante(dia.data, v.sai, tz);
+      const ap = v.aeroporto || {};
+      const inicio = new Date(sai - ((ap.chegar || 180) + 360) * 60000);
+      if (agora >= inicio && agora <= new Date(+sai + 20 * 60000)) return { dia, n, a, v, tz, sai, ap };
+    }
+  }
+  return null;
+}
+const emQuanto = (min) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, "0")}`);
+function cartaoDiaDeVoo(f, agora) {
+  const { dia, n, a, v, tz, sai, ap } = f;
+  const menos = (min) => new Date(+sai - min * 60000);
+  const passos = [];
+  if (ap.conexao) {
+    const ant = dia.atividades[n - 1];
+    if (ant?.hora && ant.titulo.startsWith("Chegada")) passos.push(["Chegada da conexão", instante(dia.data, ant.hora, tz)]);
+  } else if (ap.chegar) passos.push(["Chegar ao aeroporto", menos(ap.chegar), "recomendado"]);
+  if (ap.checkin) passos.push(["Check-in e despacho fecham", menos(ap.checkin)]);
+  if (ap.portao) passos.push(["Portão de embarque fecha", menos(ap.portao)]);
+  passos.push(["Decolagem", sai]);
+  const prox = passos.findIndex(([, t]) => t > agora);
+  const falta = Math.max(0, Math.round((sai - agora) / 60000));
+  return `<section class="dia-voo">
+    <div class="rot">${falta > 0 ? `DIA DE VOO · DECOLA EM ${emQuanto(falta).toUpperCase()}` : "DIA DE VOO · EMBARQUE AGORA"}</div>
+    <div class="t">${h(v.cia)} ${h(v.numero)} · ${h(v.de)} → ${h(v.para)}</div>
+    <ol class="passos-voo">${passos.map(([r, t, obs], j) => {
+      const st = prox === -1 || j < prox ? "feito" : j === prox ? "agora" : "";
+      const min = Math.round((t - agora) / 60000);
+      return `<li class="${st}"><b>${horaEm(tz, t)}</b><span>${h(r)}${obs ? ` <small>(${obs})</small>` : ""}</span>${j === prox ? `<em>em ${emQuanto(Math.max(0, min))}</em>` : ""}</li>`;
+    }).join("")}</ol>
+    <div class="s">Horários locais de ${h(v.de)}${v.terminal ? " · " + h(v.terminal) : ""}</div>
+    ${chipLocalizador(v.localizador)}
+    <div class="botoes">
+      ${a.docs?.length ? `<button type="button" class="botao botao-papel" data-doc="${h(a.docs[0])}">${I.bilhete} Passagem</button>` : ""}
+      ${ap.conexao ? `<a class="botao botao-contorno" href="#/dia/${dia.data}/${n}">${I.seta} Detalhes</a>` : `<button type="button" class="botao botao-contorno" data-ir="${dia.data}|${n}">${I.carro} Ir ao aeroporto</button>`}
+    </div>
+  </section>`;
+}
+
 /* foto do dia (aba Hoje): fica trancada no cofre como os documentos */
 const FOTOS = new Map();
 const fotoDia = (dia) => (dia.foto && R.docs[dia.foto]?.arquivo ? `<div class="foto-dia"><img alt="" data-foto="${h(dia.foto)}"></div>` : "");
@@ -632,6 +733,7 @@ function telaHoje() {
     }
     const a = destaque.a;
     const depois = dia.atividades.map((x, n) => ({ x, n })).filter((o) => o.n > destaque.n).slice(0, 4);
+    const foco = vooEmFoco(agoraApp());
     corpo = `
       <a class="bilhete-mini" href="#/dia/${dia.data}">
         <div class="faixa ${pais.claro ? "claro" : ""}" style="--pais:${pais.cor}">
@@ -643,7 +745,7 @@ function telaHoje() {
         <div class="tracejado"></div>
         <div class="pe">${barra19(i)}<div class="fichas fichas-claras">${fichaTempo(dia)}</div></div>
       </a>
-      <div class="proximo">
+      ${foco ? cartaoDiaDeVoo(foco, agoraApp()) : `<div class="proximo">
         <div class="rot">${rot === "HOJE" ? "HOJE" : "PRÓXIMO · " + rot}</div>
         <div class="t">${h(a.titulo)}</div>
         <div class="s">${h(a.voo ? [a.hora, linhaVoo(a)].join(" · ") : [a.hora, a.local || a.horario].filter(Boolean).join(" · "))}</div>
@@ -652,7 +754,7 @@ function telaHoje() {
           <a class="botao botao-papel" href="#/dia/${dia.data}/${destaque.n}">${I.seta} Detalhes</a>
           ${a.docs?.length ? `<button type="button" class="botao botao-contorno" data-doc="${h(a.docs[0])}">${I.bilhete} Documento</button>` : (a.mapa || a.endereco ? `<button type="button" class="botao botao-contorno" data-ir="${dia.data}|${destaque.n}">${I.carro} Ir até lá</button>` : "")}
         </div>
-      </div>
+      </div>`}
       ${depois.length ? `<div style="display:flex;justify-content:space-between;align-items:baseline"><h2 class="secao">Depois, hoje</h2><a href="#/dia/${dia.data}" style="font-size:13px;font-weight:600;color:var(--tinta)">Ver o dia todo</a></div>
       <div class="lista">${depois.map((o) => `<a class="linha-lista" href="#/dia/${dia.data}/${o.n}"><span class="ponto-lista" style="background:${pais.cor}"></span><div class="meio"><div class="t">${h(o.x.titulo)}</div><div class="s">${h([textoHora(o.x), subAtividade(o.x)].filter(Boolean).join(" · "))}</div></div><span class="seta">${I.seta}</span></a>`).join("")}</div>` : ""}`;
   }
@@ -671,7 +773,7 @@ function telaHoje() {
 }
 
 function barra19(ate) {
-  const cel = R.dias.map((d, n) => `<i style="background:${ate < 0 || n <= ate ? corDia(d).cor : "#E4E0D6"}"></i>`).join("");
+  const cel = R.dias.map((d, n) => `<i style="background:${ate < 0 || n <= ate ? corDia(d).cor : "var(--linha)"}"></i>`).join("");
   return `<div class="barra19" role="img" aria-label="Linha da viagem">${cel}</div><div class="barra19-legenda"><span>${h(dataMedia(R.inicio))}</span><span>${h(dataMedia(R.fim))}</span></div>`;
 }
 
@@ -727,6 +829,7 @@ function telaDia(iso) {
   const hoje = hojeISO();
   $app.innerHTML = `
   ${cabecalhoDia(dia, i)}
+  ${acoesDia(dia, i)}
   <section class="tempo" style="--pais:${pais.cor}" aria-label="Atividades do dia">
     ${dia.atividades.map((a, n) => `
       <a class="passo ${a.status === "confirmado" ? "confirmado" : ""} ${a.status === "pendente" ? "pendente" : ""} ${dia.data < hoje ? "feito" : ""}" href="#/dia/${dia.data}/${n}">
@@ -763,12 +866,13 @@ function telaAtividade(iso, n) {
     <div style="display:flex;flex-direction:column;gap:8px">
       ${a.hora && !a.voo ? `<span class="mono" style="font-weight:600;font-size:13px;color:${pais.claro ? "var(--acafrao-texto)" : pais.cor}">${h(a.hora)}</span>` : ""}
       <h1 class="atv-titulo">${h(a.titulo)}</h1>
-      ${a.detalhe ? `<div style="font-size:15px;color:#3B4262">${h(a.detalhe)}</div>` : ""}
+      ${a.detalhe ? `<div style="font-size:15px;color:var(--texto-2)">${h(a.detalhe)}</div>` : ""}
       ${etiquetasAtividade({ ...a, alerta: null, pendencia: a.status === "pendente" ? "Pendente" : null })}
     </div>
     ${a.voo ? cartaoVoo(a) : ""}
     ${a.alerta ? `<div class="aviso aviso-alerta">${I.alerta}<div>${h(a.alerta)}</div></div>` : ""}
     ${a.avisos?.length ? `<div class="aviso aviso-pendente avisos">${I.pendente}<div><b>Antes de ir</b><ul>${a.avisos.map((t) => `<li>${h(t)}</li>`).join("")}</ul></div></div>` : ""}
+    ${a.ficha ? fichaLugar(a.ficha) : ""}
     ${a.status === "pendente" ? `<div class="aviso aviso-pendente">${I.pendente}<div><b>Pendência:</b> ${h(a.pendencia || "a resolver")}</div></div>` : ""}
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
@@ -776,7 +880,7 @@ function telaAtividade(iso, n) {
       ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${a.docs.length > 1 ? "Documentos" : h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
     </div>
     ${a.docs?.length ? `<div class="rotulo">Documentos</div><div class="lista">${a.docs.map((id) => linhaDoc(id)).join("")}</div>` : ""}
-    ${a.notas ? `<div class="aviso aviso-pendente" style="background:#fff;color:var(--tinta)"><div><b>Notas</b> · ${h(a.notas)}</div></div>` : ""}
+    ${a.notas ? `<div class="aviso aviso-pendente" style="background:var(--cartao);color:var(--tinta)"><div><b>Notas</b> · ${h(a.notas)}</div></div>` : ""}
   </main>`;
   window.scrollTo(0, 0);
 }
@@ -1055,6 +1159,7 @@ const SUBAPPS = [
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
   { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>', tela: () => telaFusos() },
+  { id: "tema", nome: "Tema", cor: "#0D1222", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>', tela: () => telaTema() },
   { id: "atualizar", nome: "Atualizar", cor: "#565D78", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4.2L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.8 4.2l1.2-1.7M20 20v-4.5h-4.5"/></svg>', tela: () => telaAtualizar() },
   { id: "instalar", nome: "Instalar", cor: "#C3122F", soSemInstalar: true, icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3M10 18.5h4"/></svg>', tela: () => telaInstalar() },
 ];
@@ -1195,6 +1300,29 @@ function telaFusos() {
       <div class="linha-lista"><i class="barra-pais" style="background:${PAISES[f.pais].cor}"></i><div class="meio"><div class="t">${h(f.nome)}</div><div class="s">${h(utcTexto(f.tz, ref))}${f.pais !== "BR" ? " · " + h(difSP(f.tz, ref)) : ""} · ${h(f.obs)}</div></div><div class="hora-fuso" data-tz="${f.tz}">${horaEm(f.tz)}</div></div>`).join("")}</div>
     <div class="nota">Horário de agora em cada lugar. As diferenças já consideram as datas da viagem (a Itália estará no horário de inverno).</div>
   </main>`;
+}
+
+/* tema claro / escuro */
+const LS_TEMA = "indaly.tema";
+function aplicarTema() {
+  const t = lerLS(LS_TEMA) || "auto";
+  if (t === "auto") delete document.documentElement.dataset.tema; else document.documentElement.dataset.tema = t;
+  const escuro = t === "escuro" || (t === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", escuro ? "#0D1222" : "#14224F");
+}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", aplicarTema);
+aplicarTema();
+function telaTema() {
+  const atual = lerLS(LS_TEMA) || "auto";
+  const op = [
+    ["auto", "Automático", "Acompanha o modo claro/escuro do celular", '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/></svg>'],
+    ["claro", "Claro", "Sempre claro", TEMPO_ICONES.sol],
+    ["escuro", "Escuro", "Sempre escuro; bom à noite e no avião", '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>'],
+  ];
+  $app.innerHTML = `<main class="tela">${topoSubapp("Tema")}
+    <div class="temas" role="group" aria-label="Tema">${op.map(([id, t, d, ic]) => `<button type="button" data-tema="${id}" aria-pressed="${id === atual}">${ic}<span class="meio"><span class="t">${t}</span><br><span class="s">${d}</span></span><span class="marca-ok">${I.ok}</span></button>`).join("")}</div>
+  </main>`;
+  $app.querySelectorAll("[data-tema]").forEach((b) => b.addEventListener("click", () => { gravarLS(LS_TEMA, b.dataset.tema); aplicarTema(); telaTema(); }));
 }
 
 function telaAtualizar() {
@@ -1398,7 +1526,7 @@ let MALA = null;
 let malaSoPendentes = false;
 const BOLSAS = {
   mao: { nome: "Bagagem de mão", cor: "#1F5FBF", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5V5a3 3 0 0 1 6 0v1.5"/><rect x="5" y="6.5" width="14" height="14.5" rx="4"/><path d="M8.5 14h7v4h-7zM8.5 11h7"/></svg>' },
-  despachar: { nome: "Pode ir despachada", cor: "#1B1B1F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5.5" y="6" width="13" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>' },
+  despachar: { nome: "Pode ir despachada", cor: "var(--bolsa-preta)", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5.5" y="6" width="13" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>' },
   proibido: { nome: "Proibido na bagagem de mão", cor: "#C3122F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>' },
   dica: { nome: "Dica", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>' },
 };
