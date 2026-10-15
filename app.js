@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v5";
+const VERSAO_APP = "v6";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -85,7 +85,7 @@ let IDENT = null;
 let CAMBIO = null;
 let TEMPO = (() => { try { return JSON.parse(lerLS(LS_TEMPO)) || null; } catch { return null; } })();
 const OFFLINE = { total: 0, prontos: 0, terminou: false };
-let cambioEstado = { modo: "de", moeda: "INR", valor: "100" };
+let cambioEstado = null;
 let carteiraFiltro = "todos";
 
 const corDia = (dia) => (dia.data === R.fim && dia.pais === "BR" ? OURO : PAISES[dia.pais]);
@@ -206,6 +206,7 @@ function rotuloArquivo(nome) {
   const m = nome.match(/\((Bilhete|Recibo|recibo|Daniel|Marina)/);
   if (m) return m[1][0].toUpperCase() + m[1].slice(1);
   if (/ETA/.test(nome)) return "e-Visa";
+  if (/Passage/i.test(nome)) return "Passagem";
   if (/travel_insurance/i.test(nome)) return "Apólice";
   if (/certificado_de_elegibilidade/i.test(nome)) return "Certificado";
   return "Documento";
@@ -328,7 +329,39 @@ function etiquetasAtividade(a) {
   return e.length ? `<div class="etiquetas">${e.join("")}</div>` : "";
 }
 
+function linhaVoo(a) {
+  const v = a.voo;
+  return [v.numero, v.duracao ? v.duracao + " de voo" : "", v.chega ? "chega " + v.chega + (v.chega_dia ? " (" + v.chega_dia + ")" : "") : ""].filter(Boolean).join(" · ");
+}
+const chipLocalizador = (cod) => `<span class="localizador" role="button" tabindex="0" data-copiar="${h(cod)}" aria-label="Copiar localizador ${h(cod)}"><small>LOCALIZADOR</small><b>${h(cod)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>`;
+function cartaoVoo(a) {
+  const v = a.voo;
+  return `<section class="voo" aria-label="Voo ${h(v.numero)}">
+    <div class="voo-topo"><span>${h(v.cia)} · <b class="mono">${h(v.numero)}</b></span>${v.duracao ? `<span>${h(v.duracao)} de voo</span>` : ""}</div>
+    <div class="voo-rota">
+      <div><div class="voo-cod">${h(v.de)}</div><div class="voo-hora">${h(v.sai)}</div><div class="voo-rot">saída do voo</div></div>
+      <div class="voo-meio" aria-hidden="true"><i></i>${I.aviao}<i></i></div>
+      <div class="dir"><div class="voo-cod">${h(v.para)}</div><div class="voo-hora">${h(v.chega || "—")}</div><div class="voo-rot">${v.chega ? "chegada" + (v.chega_dia ? " · " + h(v.chega_dia) : "") : "volta ao KTM"}</div></div>
+    </div>
+    <div class="voo-nota">Horário local de cada aeroporto${v.terminal ? " · " + h(v.terminal) : ""}</div>
+    ${chipLocalizador(v.localizador)}
+    ${(v.extra || []).map(([r, val]) => `<span class="localizador menor" role="button" tabindex="0" data-copiar="${h(val)}"><small>${h(r.toUpperCase())}</small><b>${h(val)}</b></span>`).join("")}
+    ${v.app ? `<a class="botao botao-papel" href="${h(urlApp(v.app))}" ${urlApp(v.app).startsWith("intent:") ? "" : 'target="_blank" rel="noopener"'}>${logoApp(v.app, "app-logo mini")} Abrir o app da ${h(v.cia)}</a>` : ""}
+  </section>`;
+}
+document.addEventListener("click", (e) => {
+  const c = e.target.closest("[data-copiar]");
+  if (!c) return;
+  e.preventDefault(); e.stopPropagation();
+  const t = c.dataset.copiar;
+  (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(() => avisar(`${t} copiado.`), () => avisar("Não consegui copiar."));
+}, true);
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches?.("[data-copiar]")) { e.preventDefault(); e.target.click(); }
+});
+
 function subAtividade(a) {
+  if (a.voo) return linhaVoo(a);
   return [a.detalhe, a.horario, a.local].filter(Boolean)[0] || "";
 }
 
@@ -446,7 +479,8 @@ function telaHoje() {
       <div class="proximo">
         <div class="rot">${rot === "HOJE" ? "HOJE" : "PRÓXIMO · " + rot}</div>
         <div class="t">${h(a.titulo)}</div>
-        <div class="s">${h([a.hora, a.local || a.horario].filter(Boolean).join(" · "))}</div>
+        <div class="s">${h(a.voo ? [a.hora, linhaVoo(a)].join(" · ") : [a.hora, a.local || a.horario].filter(Boolean).join(" · "))}</div>
+        ${a.voo ? chipLocalizador(a.voo.localizador) : ""}
         <div class="botoes">
           <a class="botao botao-papel" href="#/dia/${dia.data}/${destaque.n}">${I.seta} Detalhes</a>
           ${a.docs?.length ? `<button type="button" class="botao botao-contorno" data-doc="${h(a.docs[0])}">${I.bilhete} Documento</button>` : (a.mapa || a.endereco ? `<button type="button" class="botao botao-contorno" data-ir="${dia.data}|${destaque.n}">${I.carro} Ir até lá</button>` : "")}
@@ -533,6 +567,7 @@ function telaDia(iso) {
         <div class="corpo">
           <div class="t">${h(a.titulo)}</div>
           ${subAtividade(a) ? `<div class="s">${h(subAtividade(a))}</div>` : ""}
+          ${a.voo ? chipLocalizador(a.voo.localizador) : ""}
           ${etiquetasAtividade(a)}
         </div>
       </a>`).join("")}
@@ -548,7 +583,7 @@ function telaAtividade(iso, n) {
   if (!a) return (location.hash = "#/dia/" + iso);
   const pais = corDia(dia);
   const linhas = [];
-  if (a.hora || a.periodo) linhas.push([I.relogio, "Quando", `${h(a.hora || a.periodo)} · ${h(SEM3[dataDe(dia.data).getDay()])}, ${h(dataMedia(dia.data))}`]);
+  if ((a.hora || a.periodo) && !a.voo) linhas.push([I.relogio, "Quando", `${h(a.hora || a.periodo)} · ${h(SEM3[dataDe(dia.data).getDay()])}, ${h(dataMedia(dia.data))}`]);
   if (a.horario) linhas.push([I.porta, "Funcionamento", h(a.horario)]);
   if (a.local || a.endereco) linhas.push([I.pino, "Onde", `${a.local ? h(a.local) : ""}${a.local && a.endereco ? "<br>" : ""}${a.endereco ? `<span style="font-weight:400;font-size:14px">${h(a.endereco)}</span>` : ""}`]);
   const comoIr = a.como_ir || (dia.transporte ? dia.transporte.texto + (dia.transporte.status === "pendente" ? " (a combinar)" : "") : "");
@@ -558,11 +593,12 @@ function telaAtividade(iso, n) {
   <main class="tela" style="--pais-texto:${pais.claro ? "var(--acafrao-texto)" : pais.cor}">
     <a class="voltar" href="#/dia/${dia.data}">${I.voltar} ${h(diaCurto(dia.data))} · ${h(dia.cidade)}</a>
     <div style="display:flex;flex-direction:column;gap:8px">
-      ${a.hora ? `<span class="mono" style="font-weight:600;font-size:13px;color:${pais.claro ? "var(--acafrao-texto)" : pais.cor}">${h(a.hora)}</span>` : ""}
+      ${a.hora && !a.voo ? `<span class="mono" style="font-weight:600;font-size:13px;color:${pais.claro ? "var(--acafrao-texto)" : pais.cor}">${h(a.hora)}</span>` : ""}
       <h1 class="atv-titulo">${h(a.titulo)}</h1>
       ${a.detalhe ? `<div style="font-size:15px;color:#3B4262">${h(a.detalhe)}</div>` : ""}
       ${etiquetasAtividade({ ...a, alerta: null, pendencia: a.status === "pendente" ? "Pendente" : null })}
     </div>
+    ${a.voo ? cartaoVoo(a) : ""}
     ${a.alerta ? `<div class="aviso aviso-alerta">${I.alerta}<div>${h(a.alerta)}</div></div>` : ""}
     ${a.status === "pendente" ? `<div class="aviso aviso-pendente">${I.pendente}<div><b>Pendência:</b> ${h(a.pendencia || "a resolver")}</div></div>` : ""}
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
@@ -599,23 +635,21 @@ const ICONE_CAT = { seguro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d
 function itemCarteira(c) {
   const tint = c.data ? (PAISES[R.dias.find((d) => d.data === c.data)?.pais] || PAISES.BR).tint : "#E3E6F0";
   const icone = c.titulo.startsWith("Trem") ? I.trem : ICONE_CAT[c.cat];
-  return `<div class="cart-item">
-    <div class="ic" style="background:${tint}">${icone}</div>
-    <div class="meio">
-      <div class="t">${h(c.titulo)}</div>
-      <div class="s">${h(c.sub || "")}</div>
-      ${c.aviso ? `<span class="etiqueta et-pendente" style="margin-top:4px">${I.pendente} ${h(c.aviso)}</span>` : ""}
-      <div class="arquivos">${c.docs.map((id) => `<button type="button" data-doc="${h(id)}">${I.pdf} ${h(c.docs.length > 1 ? rotuloArquivo(R.docs[id].nome) : "Abrir")}</button>`).join("")}</div>
-    </div>
-    ${c.data ? `<div class="data">${h(dataMedia(c.data))}</div>` : ""}
-  </div>`;
+  const sub = [c.data ? dataMedia(c.data) : "", c.sub].filter(Boolean).join(" · ");
+  const unico = c.docs.length === 1;
+  const corpo = `<span class="ic" style="background:${tint}">${icone}</span>
+    <span class="meio"><span class="t">${h(c.titulo)}</span><span class="s">${h(sub)}${c.aviso ? ` · <em>${h(c.aviso)}</em>` : ""}</span></span>`;
+  if (unico) return `<button type="button" class="cart-item" data-doc="${h(c.docs[0])}">${corpo}<span class="seta">${I.seta}</span></button>`;
+  return `<div class="cart-item">${corpo}<span class="arquivos">${c.docs.map((id) => `<button type="button" data-doc="${h(id)}">${h(rotuloArquivo(R.docs[id].nome))}</button>`).join("")}</span></div>`;
 }
 
 function telaCarteira() {
   const hoje = hojeISO();
   const itens = R.carteira.filter((c) => carteiraFiltro === "todos" || c.cat === carteiraFiltro);
-  const proximos = itens.filter((c) => !c.ate || c.ate >= hoje);
+  const sempre = itens.filter((c) => !c.ate);
+  const proximos = itens.filter((c) => c.ate && c.ate >= hoje);
   const usados = itens.filter((c) => c.ate && c.ate < hoje);
+  const bloco = (titulo, lista, extra = "") => lista.length ? `<div class="rotulo">${titulo}</div><div class="lista-densa ${extra}">${lista.map(itemCarteira).join("")}</div>` : "";
   $app.innerHTML = `
   <main class="tela">
     <div>
@@ -625,8 +659,10 @@ function telaCarteira() {
     <div class="filtros" role="group" aria-label="Filtrar documentos">
       ${CATS.map((c) => `<button type="button" data-filtro="${c.id}" aria-pressed="${carteiraFiltro === c.id}">${h(c.nome)}</button>`).join("")}
     </div>
-    <div class="lista">${proximos.map(itemCarteira).join("") || '<div class="nota">Nada por aqui.</div>'}</div>
-    ${usados.length ? `<div class="rotulo">Utilizados</div><div class="lista usados" style="opacity:.55;filter:grayscale(1)">${usados.map(itemCarteira).join("")}</div>` : ""}
+    ${bloco("Viagem toda", sempre)}
+    ${bloco("Próximos", proximos)}
+    ${bloco("Utilizados", usados, "usados")}
+    ${itens.length ? "" : '<div class="nota">Nada por aqui.</div>'}
     <button type="button" class="rodape-acao" id="bloquear">Bloquear este celular</button>
   </main>`;
   $app.querySelectorAll("[data-filtro]").forEach((b) => b.addEventListener("click", () => { carteiraFiltro = b.dataset.filtro; telaCarteira(); }));
@@ -645,12 +681,23 @@ function atualizarEstadoCofre() {
     : `Guardando para usar sem internet… ${OFFLINE.prontos} de ${OFFLINE.total}`;
 }
 
+const BANDEIRAS = {
+  USD: '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#fff"/><path d="M0 0h30v2.9H0zM0 5.7h30v2.9H0zM0 11.4h30v2.9H0zM0 17.1h30V20H0z" fill="#B22234"/><rect width="13" height="10.8" fill="#3C3B6E"/><g fill="#fff"><circle cx="3" cy="2.7" r=".9"/><circle cx="6.5" cy="2.7" r=".9"/><circle cx="10" cy="2.7" r=".9"/><circle cx="4.7" cy="5.4" r=".9"/><circle cx="8.3" cy="5.4" r=".9"/><circle cx="3" cy="8.1" r=".9"/><circle cx="6.5" cy="8.1" r=".9"/><circle cx="10" cy="8.1" r=".9"/></g></svg>',
+  EUR: '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#003399"/><g fill="#FFCC00"><circle cx="15" cy="4.5" r="1"/><circle cx="17.75" cy="5.24" r="1"/><circle cx="19.76" cy="7.25" r="1"/><circle cx="20.5" cy="10" r="1"/><circle cx="19.76" cy="12.75" r="1"/><circle cx="17.75" cy="14.76" r="1"/><circle cx="15" cy="15.5" r="1"/><circle cx="12.25" cy="14.76" r="1"/><circle cx="10.24" cy="12.75" r="1"/><circle cx="9.5" cy="10" r="1"/><circle cx="10.24" cy="7.25" r="1"/><circle cx="12.25" cy="5.24" r="1"/></g></svg>',
+  INR: '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="6.67" fill="#FF9933"/><rect y="6.67" width="30" height="6.67" fill="#fff"/><rect y="13.33" width="30" height="6.67" fill="#138808"/><circle cx="15" cy="10" r="2.6" fill="none" stroke="#000080" stroke-width=".9"/><circle cx="15" cy="10" r=".7" fill="#000080"/></svg>',
+  NPR: '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><path d="M9 1v18h11.5L13 11.3h7.5L9 1z" fill="#DC143C" stroke="#003893" stroke-width="1.4" stroke-linejoin="round"/><circle cx="12.2" cy="8.2" r="1.1" fill="#fff"/><circle cx="12.6" cy="15.2" r="1.5" fill="#fff"/></svg>',
+  BRL: '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><rect width="30" height="20" fill="#009C3B"/><path d="M15 2.5L27 10 15 17.5 3 10z" fill="#FFDF00"/><circle cx="15" cy="10" r="4.2" fill="#002776"/></svg>',
+};
 const MOEDAS = [
   { c: "USD", s: "US$", n: "Dólar americano", cor: "#14224F" },
   { c: "EUR", s: "€", n: "Euro · Itália", cor: "#0D7A48" },
   { c: "INR", s: "₹", n: "Rúpia indiana", cor: "#EE8A24" },
   { c: "NPR", s: "रू", n: "Rúpia nepalesa", cor: "#C3122F" },
 ];
+function moedaDoDia() {
+  const d = R.dias[idxDia(hojeISO())];
+  return d ? ({ IN: "INR", NP: "NPR", IT: "EUR" }[d.pais] || "INR") : "INR";
+}
 const fmt = (v, casas) => v.toLocaleString("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas });
 const lerNumero = (s) => parseFloat(String(s).replace(/\./g, "").replace(",", ".")) || 0;
 
@@ -660,13 +707,14 @@ function telaCambio() {
     return;
   }
   const T = CAMBIO.reais_por_unidade;
+  if (!cambioEstado) cambioEstado = { modo: "para", moeda: moedaDoDia(), valor: "1.000" };
   const e = cambioEstado;
   const m = MOEDAS.find((x) => x.c === e.moeda);
   const valor = lerNumero(e.valor);
   const rapidos = e.modo === "de" ? [50, 100, 200, 500] : { USD: [10, 50, 100, 200], EUR: [10, 20, 50, 100], INR: [100, 500, 1000, 2000], NPR: [100, 500, 1000, 5000] }[e.moeda];
   const resultado = e.modo === "de"
-    ? MOEDAS.map((x) => `<div class="resultado"><i style="background:${x.cor}"></i><div class="meio"><div class="c">${x.c}</div><div class="n">${h(x.n)}</div></div><div class="v">${x.s} ${fmt(valor / T[x.c], valor / T[x.c] >= 100 ? 0 : 2)}</div></div>`).join("")
-    : `<div class="resultado"><i style="background:#F2C230"></i><div class="meio"><div class="c">BRL</div><div class="n">Real</div></div><div class="v">R$ ${fmt(valor * T[e.moeda], 2)}</div></div>
+    ? MOEDAS.map((x) => `<div class="resultado">${BANDEIRAS[x.c]}<div class="meio"><div class="c">${x.c}</div><div class="n">${h(x.n)}</div></div><div class="v">${x.s} ${fmt(valor / T[x.c], valor / T[x.c] >= 100 ? 0 : 2)}</div></div>`).join("")
+    : `<div class="resultado">${BANDEIRAS.BRL}<div class="meio"><div class="c">BRL</div><div class="n">Real</div></div><div class="v">R$ ${fmt(valor * T[e.moeda], 2)}</div></div>
        <div class="nota">1 ${m.c} = R$ ${fmt(T[e.moeda], T[e.moeda] < 1 ? 4 : 2)} · R$ 1 = ${m.s} ${fmt(1 / T[e.moeda], 1 / T[e.moeda] >= 10 ? 2 : 4)}</div>`;
   $app.innerHTML = `
   <main class="tela">
@@ -674,11 +722,11 @@ function telaCambio() {
       <h1 class="titulo-tela">Câmbio</h1>
     </div>
     <div class="filtros" role="group" aria-label="Direção">
-      <button type="button" data-modo="de" aria-pressed="${e.modo === "de"}">Reais → moeda</button>
       <button type="button" data-modo="para" aria-pressed="${e.modo === "para"}">Moeda → reais</button>
+      <button type="button" data-modo="de" aria-pressed="${e.modo === "de"}">Reais → moeda</button>
     </div>
     <div class="conversor">
-      ${e.modo === "para" ? `<div class="moedas" role="group" aria-label="Moeda" style="grid-template-columns:repeat(4,minmax(0,1fr))">${MOEDAS.map((x) => `<button type="button" data-moeda="${x.c}" aria-pressed="${x.c === e.moeda}">${x.c}</button>`).join("")}</div>` : ""}
+      ${e.modo === "para" ? `<div class="moedas" role="group" aria-label="Moeda" style="grid-template-columns:repeat(4,minmax(0,1fr))">${MOEDAS.map((x) => `<button type="button" data-moeda="${x.c}" aria-pressed="${x.c === e.moeda}">${BANDEIRAS[x.c]}<span>${x.c}</span></button>`).join("")}</div>` : ""}
       <label for="valor">${e.modo === "de" ? "VALOR EM REAIS" : "VALOR EM " + h(m.n.split(" ·")[0].toUpperCase())}</label>
       <div class="valor"><span>${e.modo === "de" ? "R$" : h(m.s)}</span><input id="valor" type="text" inputmode="decimal" value="${h(e.valor)}" autocomplete="off"></div>
       <div class="rapidos">${rapidos.map((n) => `<button type="button" data-rapido="${n}">${n.toLocaleString("pt-BR")}</button>`).join("")}</div>
