@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v10";
+const VERSAO_APP = "v11";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -215,7 +215,23 @@ function fichaSol(dia) {
   const s = textoSol(dia);
   return s ? `<span class="ficha ficha-sol" title="Nascer e pôr do sol" aria-label="Sol nasce às ${s.nasce} e se põe às ${s.poe}">${SOL_ICONES.nasce} ${s.nasce} – ${s.poe}</span>` : "";
 }
-const tempoDoDia = (dia) => TEMPO?.porCidade?.[dia.cidade]?.[dia.data] || null;
+// O resumo diário às vezes vem vazio (ex.: último dia da previsão); nesse caso calcula a partir das horas.
+function tempoDoDia(dia) {
+  const t = TEMPO?.porCidade?.[dia.cidade]?.[dia.data];
+  if (!t) return null;
+  const hs = (t.horas || []).filter((x) => x[1] != null);
+  const num = (v) => typeof v === "number" && isFinite(v);
+  const r = { ...t };
+  if (hs.length) {
+    if (!num(r.max)) r.max = Math.max(...hs.map((x) => x[1]));
+    if (!num(r.min)) r.min = Math.min(...hs.map((x) => x[1]));
+    if (!num(r.chuva)) { const ps = hs.map((x) => x[3]).filter(num); r.chuva = ps.length ? Math.max(...ps) : null; }
+    if (!num(r.mm)) { const ms = hs.map((x) => x[4]).filter(num); r.mm = ms.length ? ms.reduce((a, b) => a + b, 0) : null; }
+    if (!num(r.vento)) { const vs = hs.map((x) => x[6]).filter(num); r.vento = vs.length ? Math.max(...vs) : null; }
+    if (!num(r.cod)) { const dia = hs.filter((x) => x[8]).map((x) => x[5]).filter(num); r.cod = dia.length ? Math.max(...dia) : 3; }
+  }
+  return num(r.max) && num(r.min) ? r : null;
+}
 function fichaTempo(dia) {
   const t = tempoDoDia(dia);
   if (!t) return "";
@@ -251,6 +267,113 @@ function rotuloArquivo(nome) {
   return "Documento";
 }
 
+/* Visor de PDF com zoom (pinça ou toque duplo). Ao soltar, redesenha as páginas na resolução do zoom,
+   para QR codes e códigos de barras ficarem nítidos como num leitor de PDF. */
+const ZOOM_MAX = 4;
+const PIXELS_MAX = 12e6; // por página; limite seguro para canvas em celulares
+async function visorPdf(pdf) {
+  $visorCorpo.innerHTML = '<div class="paginas"><div class="paginas-conteudo"></div></div><div class="visor-dica">Aproxime com dois dedos ou toque duas vezes</div>';
+  const $rolo = $visorCorpo.querySelector(".paginas");
+  const $cont = $rolo.firstChild;
+  const largura = Math.min($visorCorpo.clientWidth, 900) - 16;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const paginas = [];
+  let zoom = 1, geracao = 0;
+  const cssLargura = () => largura * zoom;
+  async function desenhar(p, gen) {
+    const base = p.pag.getViewport({ scale: 1 });
+    let esc = (cssLargura() / base.width) * dpr;
+    const area = base.width * base.height * esc * esc;
+    if (area > PIXELS_MAX) esc *= Math.sqrt(PIXELS_MAX / area);
+    if (p.esc && Math.abs(p.esc - esc) < 0.01) return;
+    const vp = p.pag.getViewport({ scale: esc });
+    const c = document.createElement("canvas");
+    c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+    await p.pag.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    if (gen !== geracao || $visor.hidden) { c.width = 0; return; }
+    c.style.width = cssLargura() + "px";
+    c.setAttribute("aria-label", p.c.getAttribute("aria-label"));
+    p.c.replaceWith(c);
+    p.c.width = 0;
+    p.c = c; p.esc = esc;
+  }
+  async function redesenhar() {
+    const gen = ++geracao;
+    const topo = $rolo.scrollTop, alt = $rolo.clientHeight;
+    // primeiro as páginas visíveis, depois as outras
+    const ordem = [...paginas].sort((a, b) => {
+      const va = a.c.offsetTop + a.c.offsetHeight > topo && a.c.offsetTop < topo + alt ? 0 : 1;
+      const vb = b.c.offsetTop + b.c.offsetHeight > topo && b.c.offsetTop < topo + alt ? 0 : 1;
+      return va - vb;
+    });
+    for (const p of ordem) { if (gen !== geracao || $visor.hidden) return; await desenhar(p, gen); }
+  }
+  function aplicarZoom(novo, fx, fy) {
+    // fx, fy: ponto da tela (relativo ao rolo) que deve ficar parado
+    novo = Math.min(ZOOM_MAX, Math.max(1, novo));
+    const r = novo / zoom;
+    const cx = $rolo.scrollLeft + fx, cy = $rolo.scrollTop + fy;
+    zoom = novo;
+    paginas.forEach((p) => (p.c.style.width = cssLargura() + "px"));
+    $rolo.classList.toggle("ampliado", zoom > 1.01);
+    $rolo.scrollLeft = cx * r - fx;
+    $rolo.scrollTop = cy * r - fy;
+    redesenhar();
+  }
+  for (let n = 1; n <= pdf.numPages; n++) {
+    if ($visor.hidden) return;
+    const pag = await pdf.getPage(n);
+    const c = document.createElement("canvas");
+    c.setAttribute("aria-label", `Página ${n} de ${pdf.numPages}`);
+    const base = pag.getViewport({ scale: 1 });
+    c.width = 1; c.height = 1;
+    c.style.width = cssLargura() + "px";
+    c.style.aspectRatio = `${base.width} / ${base.height}`;
+    $cont.appendChild(c);
+    const p = { pag, c, esc: 0 };
+    paginas.push(p);
+    await desenhar(p, geracao);
+  }
+  // gestos
+  let pinca = null, ultimoToque = 0, ultimoXY = null;
+  const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const relativo = (x, y) => { const b = $rolo.getBoundingClientRect(); return [x - b.left, y - b.top]; };
+  $rolo.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 2) {
+      const [fx, fy] = relativo((e.touches[0].clientX + e.touches[1].clientX) / 2, (e.touches[0].clientY + e.touches[1].clientY) / 2);
+      pinca = { d0: dist(e.touches), z0: zoom, fx, fy, z: zoom };
+      $cont.style.transformOrigin = `${$rolo.scrollLeft + fx}px ${$rolo.scrollTop + fy}px`;
+    }
+  }, { passive: true });
+  $rolo.addEventListener("touchmove", (e) => {
+    if (!pinca || e.touches.length !== 2) return;
+    e.preventDefault();
+    pinca.z = Math.min(ZOOM_MAX, Math.max(1, (pinca.z0 * dist(e.touches)) / pinca.d0));
+    $cont.style.transform = `scale(${pinca.z / pinca.z0})`;
+  }, { passive: false });
+  $rolo.addEventListener("touchend", (e) => {
+    if (pinca && e.touches.length < 2) {
+      const { z, fx, fy } = pinca;
+      pinca = null;
+      $cont.style.transform = "";
+      aplicarZoom(z, fx, fy);
+      return;
+    }
+    if (e.touches.length === 0 && e.changedTouches.length === 1) {
+      const t = e.changedTouches[0], agora = Date.now();
+      if (agora - ultimoToque < 320 && ultimoXY && Math.hypot(t.clientX - ultimoXY[0], t.clientY - ultimoXY[1]) < 30) {
+        e.preventDefault();
+        const [fx, fy] = relativo(t.clientX, t.clientY);
+        aplicarZoom(zoom > 1.01 ? 1 : 2.5, fx, fy);
+        ultimoToque = 0;
+      } else { ultimoToque = agora; ultimoXY = [t.clientX, t.clientY]; }
+    }
+  });
+  $rolo.addEventListener("dblclick", (e) => { const [fx, fy] = relativo(e.clientX, e.clientY); aplicarZoom(zoom > 1.01 ? 1 : 2.5, fx, fy); });
+  $rolo.addEventListener("gesturestart", (e) => e.preventDefault());
+  setTimeout(() => $visorCorpo.querySelector(".visor-dica")?.classList.add("some"), 3500);
+}
+
 async function abrirDoc(id) {
   const doc = R.docs[id];
   if (!doc || !doc.arquivo) return avisar("Esse documento ainda não está no cofre.");
@@ -282,23 +405,7 @@ async function abrirDoc(id) {
       pdfjs.GlobalWorkerOptions.workerSrc = new URL("./vendor/pdf.worker.min.mjs", import.meta.url).href;
     }
     const pdf = await pdfjs.getDocument({ data: bytes.slice() }).promise;
-    $visorCorpo.innerHTML = '<div class="paginas"></div>';
-    const $pag = $visorCorpo.firstChild;
-    const largura = Math.min($visorCorpo.clientWidth, 900) - 16;
-    for (let n = 1; n <= pdf.numPages; n++) {
-      if ($visor.hidden) break;
-      const pag = await pdf.getPage(n);
-      const base = pag.getViewport({ scale: 1 });
-      const escala = largura / base.width;
-      const dpr = Math.min(window.devicePixelRatio || 1, 3);
-      const vp = pag.getViewport({ scale: escala * dpr });
-      const c = document.createElement("canvas");
-      c.width = vp.width; c.height = vp.height;
-      c.style.width = largura + "px";
-      c.setAttribute("aria-label", `Página ${n} de ${pdf.numPages}`);
-      $pag.appendChild(c);
-      await pag.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
-    }
+    await visorPdf(pdf);
   } catch (e) {
     console.error(e);
     $visorCorpo.innerHTML = '<div class="visor-msg">Não consegui mostrar aqui. Toque em <b>Abrir</b> para ver no leitor do celular.</div>';
@@ -360,7 +467,6 @@ function cabecalhoDia(dia, i) {
 function etiquetasAtividade(a) {
   const e = [];
   if (a.status === "confirmado" && a.docs?.length) e.push(`<span class="etiqueta et-doc">${I.bilhete} ${a.docs.length > 1 ? a.docs.length + " documentos" : "Documento"}</span>`);
-  else if (a.status === "confirmado") e.push(`<span class="etiqueta et-ok">${I.ok} Confirmado</span>`);
   if (a.status === "pendente") e.push(`<span class="etiqueta et-pendente">${I.pendente} ${h(a.pendencia || "Pendente")}</span>`);
   if (a.status === "na hora") e.push('<span class="etiqueta et-neutra">Ingresso na hora</span>');
   if (a.alerta) e.push(`<span class="etiqueta et-alerta">${I.alerta} ${h(a.alerta)}</span>`);
@@ -1004,7 +1110,7 @@ function telaTempoDia(iso) {
       <div class="tempo-dados">
         <div><small>Chuva</small><b>${t.chuva ?? "—"}%</b>${t.mm != null ? `<span>${fmtMm(t.mm)} mm</span>` : ""}</div>
         <div><small>Vento máx.</small><b>${t.vento != null ? Math.round(t.vento) : "—"}</b><span>km/h</span></div>
-        <div><small>UV máx.</small><b>${t.uv != null ? Math.round(t.uv) : "—"}</b><span>${t.uv >= 8 ? "muito alto" : t.uv >= 6 ? "alto" : t.uv >= 3 ? "moderado" : "baixo"}</span></div>
+        <div><small>UV máx.</small><b>${t.uv != null ? Math.round(t.uv) : "—"}</b><span>${t.uv == null ? "" : t.uv >= 8 ? "muito alto" : t.uv >= 6 ? "alto" : t.uv >= 3 ? "moderado" : "baixo"}</span></div>
       </div>
       ${sol ? `<div class="tempo-sol">${SOL_ICONES.nasce} nasce ${sol.nasce} · ${SOL_ICONES.poe} se põe ${sol.poe}</div>` : ""}
     </section>

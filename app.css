@@ -523,3 +523,11 @@ a.ficha { text-decoration: none; color: inherit; }
 .hora-linha .hc.forte b { color: #1F5FBF; }
 .hora-linha .hc small { font-size: 11px; color: #1F5FBF; }
 .hora-linha .marco { grid-column: 2 / -1; font-size: 12px; font-weight: 600; color: var(--tinta); background: var(--linha-2); border-radius: 6px; padding: 2px 7px; justify-self: start; margin-bottom: 2px; }
+
+/* visor de PDF com zoom */
+.visor-corpo { position: relative; }
+.paginas { display: block; touch-action: pan-x pan-y; overscroll-behavior: contain; }
+.paginas-conteudo { display: flex; flex-direction: column; align-items: center; gap: 8px; width: max-content; min-width: 100%; transform-origin: 0 0; will-change: transform; }
+.paginas canvas { max-width: none; height: auto; display: block; }
+.visor-dica { position: absolute; left: 50%; bottom: calc(18px + var(--base)); transform: translateX(-50%); background: rgba(13,22,56,0.85); color: #fff; font-size: 13px; padding: 8px 14px; border-radius: 18px; pointer-events: none; white-space: nowrap; transition: opacity 0.4s; }
+.visor-dica.some { opacity: 0; }
