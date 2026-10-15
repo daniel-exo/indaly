@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v6";
+const VERSAO_APP = "v7";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -8,6 +8,7 @@ const $abas = document.getElementById("abas");
 const LS_CHAVE = "indaly.chave";
 const LS_TEMPO = "indaly.tempo";
 const LS_VERSAO = "indaly.versao";
+const LS_MALA = "indaly.mala";
 const lerLS = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
 const gravarLS = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 const apagarLS = (k) => { try { localStorage.removeItem(k); } catch {} };
@@ -176,6 +177,35 @@ async function atualizarTempo() {
     if (r.startsWith("#/mais/tempo") || r.startsWith("#/dia") || r.startsWith("#/hoje") || r === "") rotear();
   } catch {}
 }
+/* nascer e pôr do sol, calculados no próprio celular (funciona sem internet) */
+function solDoDia(iso, lat, lon) {
+  if (lat == null || lon == null) return null;
+  const rad = Math.PI / 180;
+  const [y, m, d] = iso.split("-").map(Number);
+  const J = Date.UTC(y, m - 1, d, 12) / 86400000 + 2440587.5 - 2451545 - lon / 360;
+  const M = (357.5291 + 0.98560028 * J) % 360;
+  const C = 1.9148 * Math.sin(M * rad) + 0.02 * Math.sin(2 * M * rad) + 0.0003 * Math.sin(3 * M * rad);
+  const L = (M + C + 180 + 102.9372) % 360;
+  const transito = 2451545 + J + 0.0053 * Math.sin(M * rad) - 0.0069 * Math.sin(2 * L * rad);
+  const sinD = Math.sin(L * rad) * Math.sin(23.4397 * rad);
+  const cosW = (Math.sin(-0.833 * rad) - Math.sin(lat * rad) * sinD) / (Math.cos(lat * rad) * Math.cos(Math.asin(sinD)));
+  if (cosW < -1 || cosW > 1) return null;
+  const w = Math.acos(cosW) / rad / 360;
+  const data = (j) => new Date((j - 2440587.5) * 86400000);
+  return { nasce: data(transito - w), poe: data(transito + w) };
+}
+const SOL_ICONES = {
+  nasce: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17a7 7 0 0 1 14 0M2 20h20M12 3v6M9 6l3-3 3 3M4.2 10.2l1.4 1.4M19.8 10.2l-1.4 1.4"/></svg>',
+  poe: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 17a7 7 0 0 1 14 0M2 20h20M12 3v6M9 6l3 3 3-3M4.2 10.2l1.4 1.4M19.8 10.2l-1.4 1.4"/></svg>',
+};
+function textoSol(dia) {
+  const s = solDoDia(dia.data, dia.lat, dia.lon);
+  return s ? { nasce: horaEm(dia.fuso, s.nasce), poe: horaEm(dia.fuso, s.poe) } : null;
+}
+function fichaSol(dia) {
+  const s = textoSol(dia);
+  return s ? `<span class="ficha ficha-sol" title="Nascer e pôr do sol" aria-label="Sol nasce às ${s.nasce} e se põe às ${s.poe}">${SOL_ICONES.nasce} ${s.nasce} – ${s.poe}</span>` : "";
+}
 const tempoDoDia = (dia) => TEMPO?.porCidade?.[dia.cidade]?.[dia.data] || null;
 function fichaTempo(dia) {
   const t = tempoDoDia(dia);
@@ -278,9 +308,9 @@ function avisar(texto, acao) {
   el.className = "aviso-atualizacao";
   el.setAttribute("role", "status");
   el.innerHTML = `<span>${h(texto)}</span>${acao ? `<button type="button">${h(acao.rotulo)}</button>` : ""}`;
-  if (acao) el.querySelector("button").onclick = acao.fazer;
+  if (acao) el.querySelector("button").onclick = () => { el.remove(); acao.fazer(); };
   document.body.appendChild(el);
-  if (!acao) setTimeout(() => el.remove(), 4500);
+  if (!acao || acao.tempo) setTimeout(() => el.remove(), acao?.tempo || 4500);
 }
 
 /* ---------- partes reutilizadas ---------- */
@@ -313,7 +343,7 @@ function cabecalhoDia(dia, i) {
       </div>
       <div class="carimbo" aria-hidden="true"><b>${h(dia.codigo)}</b><span>${h(pais.nome.toUpperCase())}</span></div>
     </div>
-    <div class="fichas">${fichaTempo(dia)}${fusoFicha}${transp}</div>
+    <div class="fichas">${fichaTempo(dia)}${fichaSol(dia)}${fusoFicha}${transp}</div>
   </header>
   <div class="picote" style="--pais:${pais.cor}" aria-hidden="true"></div>`;
 }
@@ -876,6 +906,9 @@ const FUSOS = [
 
 /* sub-apps da aba Mais: para acrescentar um novo, basta incluir aqui e criar a função da página */
 const SUBAPPS = [
+  { id: "emergencia", nome: "Emergência", cor: "#C3122F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg>', tela: () => telaEmergencia() },
+  { id: "frases", nome: "Frases", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3.5V15H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2.5L16 19h-3a2 2 0 0 1-2-2"/></svg>', tela: () => telaFrases() },
+  { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: () => telaTempo() },
   { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>', tela: () => telaFusos() },
@@ -910,18 +943,20 @@ function telaTempo() {
     const t = tempoDoDia(d);
     const p = corDia(d);
     const bloco = `<div class="data-bloco-mini" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>`;
+    const sol = textoSol(d);
+    const linhaSol = sol ? `<div class="s sol-linha">${SOL_ICONES.nasce}sol nasce ${sol.nasce} · se põe ${sol.poe}</div>` : "";
     if (!t) {
       const libera = isoDe(new Date(dataDe(d.data).getTime() - 15 * 86400000));
-      return `<div class="linha-lista">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div></div></div>`;
+      return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div>${linhaSol}</div></a>`;
     }
     const [ic, txt] = climaDe(t.cod);
-    return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div></div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
+    return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div>${linhaSol}</div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
   }).join("");
   $app.innerHTML = `
   <main class="tela">
     ${topoSubapp("Tempo")}
     <div class="lista">${previsao || '<div class="nota">A viagem já acabou.</div>'}</div>
-    <div class="nota">Previsão para a cidade de cada dia; sai até 16 dias antes. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+    <div class="nota">Previsão para a cidade de cada dia; sai até 16 dias antes. Nascer e pôr do sol no horário local de cada cidade. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
   </main>`;
 }
 
@@ -1012,6 +1047,310 @@ setInterval(() => {
   document.querySelectorAll(".hora-fuso").forEach((el) => (el.textContent = horaEm(el.dataset.tz)));
 }, 30000);
 
+/* ---------- Emergência ---------- */
+const telLimpo = (t) => "tel:" + String(t).replace(/[^\d+]/g, "");
+function paisAgora() {
+  const d = R.dias[idxDia(hojeISO())];
+  return d && ["IN", "NP", "IT"].includes(d.pais) ? d.pais : "IN";
+}
+const NOME_PAIS_EM = { IN: "na Índia", NP: "no Nepal", IT: "na Itália", BR: "no Brasil" };
+function telaEmergencia() {
+  const E = R.emergencia;
+  if (!E) { $app.innerHTML = `<main class="tela">${topoSubapp("Emergência")}<div class="nota">Os contatos de emergência ainda não estão neste roteiro. Toque em Mais → Atualizar.</div></main>`; return; }
+  const agora = paisAgora();
+  const pAgora = E.paises.find((p) => p.pais === agora);
+  const S = E.seguro;
+  const hosp = [];
+  for (const d of R.dias) {
+    const x = d.hospedagem;
+    if (!x || !x.endereco || x.nome === "Avião" || d.pais === "BR" || hosp.find((y) => y.nome === x.nome)) continue;
+    hosp.push({ ...x, pais: d.pais, cidade: d.cidade });
+  }
+  const contatos = [...(E.contatos || []).map((c) => ({ ...c, pais: "IN" })), ...hosp.filter((x) => !(E.contatos || []).some((c) => x.tel && c.tel === x.tel))];
+  const linhaContato = (c) => `
+    <div class="linha-lista contato">
+      <i class="barra-pais" style="background:${PAISES[c.pais]?.cor || "var(--tinta)"}"></i>
+      <div class="meio"><div class="t">${h(c.nome)}</div><div class="s">${h(c.papel || c.cidade || "")}</div><div class="s quebra">${h(c.endereco || "")}</div></div>
+      <div class="contato-botoes">
+        ${c.endereco ? `<a class="botao-redondo" href="${h(urlMapa(c.nome + ", " + c.endereco))}" target="_blank" rel="noopener" aria-label="Mapa de ${h(c.nome)}">${I.mapa}</a>` : ""}
+        ${c.tel ? `<a class="botao-redondo cheio" href="${telLimpo(c.tel)}" aria-label="Ligar para ${h(c.nome)}">${I.tel}</a>` : ""}
+      </div>
+    </div>`;
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Emergência")}
+    <section class="sos ${PAISES[agora].claro ? "claro" : ""}" style="--pais:${PAISES[agora].cor}">
+      <div class="sos-rot">EMERGÊNCIA ${h(NOME_PAIS_EM[agora].toUpperCase())}</div>
+      <div class="sos-numeros">${pAgora.numeros.filter((n) => n[2]).map(([num, desc]) => `<a class="sos-numero" href="${telLimpo(num)}"><b>${h(num)}</b><span>${h(desc)}</span></a>`).join("")}</div>
+    </section>
+
+    <div class="rotulo">Seguro viagem</div>
+    <div class="info">
+      <div class="info-linha">${ICONE_CAT.seguro}<div><div class="v">${h(S.nome)}</div><div class="r">${h(S.nota)}</div></div></div>
+      ${S.telefones.map(([t, d]) => `<a class="info-linha info-tel" href="${telLimpo(t)}">${I.tel}<div><div class="v mono">${h(t)}</div><div class="r">${h(d)}</div></div></a>`).join("")}
+      <div class="info-linha">${I.id}<div class="apolices"><div class="r">Apólices (toque para copiar)</div>${S.apolices.map(([quem, n]) => `<span class="localizador menor" role="button" tabindex="0" data-copiar="${h(n)}"><small>${h(quem.toUpperCase())}</small><b>${h(n)}</b></span>`).join("")}</div></div>
+    </div>
+    <div class="lista-densa">${S.docs.filter((id) => R.docs[id]).map((id) => `<button type="button" class="cart-item" data-doc="${h(id)}"><span class="ic" style="background:var(--linha-2)">${I.pdf}</span><span class="meio"><span class="t">${h(R.docs[id].titulo || R.docs[id].nome)}</span></span><span class="seta">${I.seta}</span></button>`).join("")}</div>
+
+    <div class="rotulo">Números por país</div>
+    ${E.paises.map((p) => `
+      <div class="lista-densa numeros-pais">
+        <div class="numeros-cab"><i class="barra-pais" style="background:${PAISES[p.pais].cor}"></i>${h(p.nome)}</div>
+        ${p.numeros.map(([num, desc]) => `<a class="numero-linha" href="${telLimpo(num)}"><b>${h(num)}</b><span>${h(desc)}</span>${I.tel}</a>`).join("")}
+      </div>`).join("")}
+
+    <div class="rotulo">Embaixadas do Brasil</div>
+    <div class="lista">${E.embaixadas.map((e) => linhaContato({ nome: e.nome, endereco: e.pais === "BR" ? "" : e.endereco, papel: e.pais === "BR" ? e.endereco : e.tel, tel: e.tel, pais: e.pais })).join("")}</div>
+
+    <div class="rotulo">Onde vamos ficar</div>
+    <div class="lista">${contatos.map(linhaContato).join("")}</div>
+    <div class="nota">Ligações para números de emergência funcionam com o chip do Brasil em roaming. No Nepal não existe 112: use 100 (polícia) ou 1144 (polícia turística, fala inglês).</div>
+  </main>`;
+}
+
+/* ---------- Frases úteis ---------- */
+const BANDEIRA_IT = '<svg class="bandeira" viewBox="0 0 30 20" aria-hidden="true"><rect width="10" height="20" fill="#009246"/><rect x="10" width="10" height="20" fill="#fff"/><rect x="20" width="10" height="20" fill="#CE2B37"/></svg>';
+const LINGUAS = [
+  { id: "hi", nome: "Hindi", onde: "Índia", pais: "IN", voz: ["hi"], bandeira: () => BANDEIRAS.INR },
+  { id: "ne", nome: "Nepalês", onde: "Nepal", pais: "NP", voz: ["ne", "hi"], bandeira: () => BANDEIRAS.NPR },
+  { id: "it", nome: "Italiano", onde: "Itália", pais: "IT", voz: ["it"], bandeira: () => BANDEIRA_IT },
+];
+// [português, [hindi, pronúncia], [nepalês, pronúncia], [italiano, pronúncia]]
+const FRASES = [
+  ["Olá / bom dia", ["नमस्ते", "namastê"], ["नमस्ते", "namastê"], ["Buongiorno", "buondjôrno"]],
+  ["Obrigado(a)", ["धन्यवाद", "dhanyavád"], ["धन्यवाद", "dhanyabád"], ["Grazie", "grátsie"]],
+  ["Por favor", ["कृपया", "kripayá"], ["कृपया", "kripayá"], ["Per favore", "per favôre"]],
+  ["Sim / não", ["हाँ / नहीं", "hãn / nahín"], ["हो / होइन", "hô / hôina"], ["Sì / no", "sí / nó"]],
+  ["Com licença / desculpe", ["माफ़ कीजिए", "máf kídjie"], ["माफ गर्नुहोस्", "máf garnuhôs"], ["Scusi", "scúzi"]],
+  ["Quanto custa?", ["यह कितने का है?", "iê kitnê ká hê?"], ["यो कति हो?", "iô kati hô?"], ["Quanto costa?", "cuánto cósta?"]],
+  ["Está muito caro", ["बहुत महँगा है", "bahut mahangá hê"], ["धेरै महँगो भयो", "dhêrai mahangô bhaiô"], ["È troppo caro", "é tróppo káro"]],
+  ["Pode fazer um desconto?", ["थोड़ा कम कीजिए", "thorá kam kídjie"], ["अलि कम गर्नुहोस्", "áli kam garnuhôs"], ["Può fare uno sconto?", "puó fáre úno scônto?"]],
+  ["Pouco apimentado, por favor", ["कम मिर्च, प्लीज़", "kam mirtch, plíz"], ["पिरो कम गर्नुहोस्", "pirô kam garnuhôs"], ["Non piccante, per favore", "non piccánte, per favôre"]],
+  ["Água de garrafa", ["बोतल वाला पानी", "bôtal válá páni"], ["बोतलको पानी", "bôtal-kô páni"], ["Acqua naturale", "ácua naturále"]],
+  ["A conta, por favor", ["बिल दीजिए", "bil dídjie"], ["बिल दिनुहोस्", "bil dinuhôs"], ["Il conto, per favore", "il cônto, per favôre"]],
+  ["Onde fica o banheiro?", ["टॉयलेट कहाँ है?", "tóilet kahãn hê?"], ["ट्वाइलेट कहाँ छ?", "tuáilet kahãn tchá?"], ["Dov'è il bagno?", "dové il bánho?"]],
+  ["Sou vegetariano(a)", ["मैं शाकाहारी हूँ", "mãin xákahári hûn"], ["म शाकाहारी हुँ", "ma xákahári hun"], ["Sono vegetariano / vegetariana", "sôno vedjetariáno / vedjetariána"]],
+  ["Muito gostoso!", ["बहुत स्वादिष्ट!", "bahut suádisht!"], ["मिठो छ!", "mitthô tchá!"], ["Buonissimo!", "buoníssimo!"]],
+  ["Socorro!", ["बचाओ!", "batcháo!"], ["बचाउनुहोस्!", "batcháunuhôs!"], ["Aiuto!", "aiúto!"]],
+  ["Me leve a este endereço", ["मुझे यहाँ ले चलिए", "mudjhê iahãn lê tchalie"], ["मलाई यहाँ लैजानुहोस्", "malái iahãn laidjánuhôs"], ["Mi porti a questo indirizzo", "mi pórti a cuésto indiríttso"]],
+  ["Preciso de um médico", ["मुझे डॉक्टर चाहिए", "mudjhê dóktar tcháhie"], ["मलाई डाक्टर चाहियो", "malái dáktar tcháhiô"], ["Ho bisogno di un medico", "ó bizônho di un médico"]],
+  ["Até logo", ["फिर मिलेंगे", "phir milênguê"], ["फेरि भेटौँला", "phêri bhetáunlá"], ["Arrivederci", "arrivedértchi"]],
+];
+const I_OUVIR = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5v14l-4.5-4.5H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></svg>';
+let frasesLingua = null;
+try { window.speechSynthesis?.getVoices(); } catch {}
+function falar(texto, lingua) {
+  const ss = window.speechSynthesis;
+  if (!ss || typeof SpeechSynthesisUtterance === "undefined") return avisar("Este celular não tem leitura em voz alta.");
+  ss.cancel();
+  const u = new SpeechSynthesisUtterance(texto);
+  const vozes = ss.getVoices();
+  let voz = null;
+  for (const q of lingua.voz) { voz = vozes.find((v) => v.lang.toLowerCase().replace("_", "-").startsWith(q)); if (voz) break; }
+  u.lang = voz ? voz.lang : ({ hi: "hi-IN", ne: "hi-IN", it: "it-IT" }[lingua.id]);
+  if (voz) u.voice = voz;
+  u.rate = 0.8;
+  u.onerror = () => avisar("Não consegui tocar. Veja se a voz do idioma está instalada no celular.");
+  ss.speak(u);
+}
+function telaFrases() {
+  if (!frasesLingua) frasesLingua = { IN: "hi", NP: "ne", IT: "it" }[paisAgora()] || "hi";
+  const L = LINGUAS.find((l) => l.id === frasesLingua);
+  const col = LINGUAS.indexOf(L) + 1;
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Frases")}
+    <div class="linguas" role="group" aria-label="Idioma">
+      ${LINGUAS.map((l) => `<button type="button" data-lingua="${l.id}" aria-pressed="${l.id === L.id}">${l.bandeira()}<span><b>${h(l.nome)}</b><small>${h(l.onde)}</small></span></button>`).join("")}
+    </div>
+    <div class="frases">
+      ${FRASES.map((f, i) => `
+        <div class="frase">
+          <div class="frase-pt">${h(f[0])}</div>
+          <div class="frase-orig" lang="${L.id}">${h(f[col][0])}</div>
+          <div class="frase-pron">${h(f[col][1])}</div>
+          <button type="button" class="frase-ouvir" data-falar="${i}" aria-label="Ouvir: ${h(f[0])}">${I_OUVIR}</button>
+        </div>`).join("")}
+    </div>
+    <div class="nota">A pronúncia está escrita do jeito que se lê em português; a sílaba com acento é a mais forte. O botão de ouvir usa a voz do próprio celular${L.id === "ne" ? " (o nepalês sai com a voz do hindi, que usa a mesma escrita)" : ""}. Se ficar mudo, instale a voz do idioma nas configurações de texto para fala.</div>
+  </main>`;
+  $app.querySelectorAll("[data-lingua]").forEach((b) => b.addEventListener("click", () => { frasesLingua = b.dataset.lingua; telaFrases(); }));
+  $app.querySelectorAll("[data-falar]").forEach((b) => b.addEventListener("click", () => falar(FRASES[Number(b.dataset.falar)][col][0], L)));
+}
+
+/* ---------- Mala (checklist; cada celular guarda o seu) ---------- */
+let MALA = null;
+let malaSoPendentes = false;
+const BOLSAS = {
+  mao: { nome: "Bagagem de mão", cor: "#1F5FBF", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6.5V5a3 3 0 0 1 6 0v1.5"/><rect x="5" y="6.5" width="14" height="14.5" rx="4"/><path d="M8.5 14h7v4h-7zM8.5 11h7"/></svg>' },
+  despachar: { nome: "Pode ir despachada", cor: "#1B1B1F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5.5" y="6" width="13" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>' },
+  proibido: { nome: "Proibido na bagagem de mão", cor: "#C3122F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>' },
+  dica: { nome: "Dica", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>' },
+};
+const ICONES_MALA = {
+  documentos: '<rect x="5" y="3" width="14" height="18" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M8.5 16.5h7"/>',
+  remedios: '<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-40 12 12)"/><path d="M9.6 9.1l4.8 5.8"/>',
+  toilette: '<path d="M10 3h4M10.5 3v3L8 8.5V19a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V8.5L13.5 6V3"/><path d="M8 13h8"/>',
+  roupas: '<path d="M8.5 3.5L3.5 6.5l2 4 2.5-1V20.5h8V9.5l2.5 1 2-4-5-3a3.5 3.5 0 0 1-7 0z"/>',
+  intima: '<path d="M9 3h6.5v8.5l-4.5 7.2a3 3 0 0 1-5.1-3.1L9 11z"/><path d="M9 7h6.5"/>',
+  calcados: '<path d="M3 17.5v-7l4 1.5 3-4 3.5 3.5c2 1.8 4.8 2 6.6 3a2 2 0 0 1 .9 1.7v1.3z"/><path d="M3 17.5h18M12 11l1.5-1.5"/>',
+  acessorios: '<circle cx="12" cy="12" r="5"/><path d="M9.2 7.8L10 3h4l.8 4.8M9.2 16.2L10 21h4l.8-4.8M12 10v2l1.5 1"/>',
+  olhos: '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  eletronicos: '<path d="M9 3v5M15 3v5M6 8h12v3a6 6 0 0 1-12 0zM12 17v4"/>',
+  fotos: '<path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/>',
+  papelaria: '<path d="M16 3.5l4.5 4.5L9 19.5H4.5V15z"/><path d="M13.5 6l4.5 4.5"/>',
+  diversos: '<path d="M3 8l9-5 9 5v8l-9 5-9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+  alimentos: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10M17 21V3c-2 1.5-3 4-3 7h3"/>',
+  praia: '<path d="M3 11a9 9 0 0 1 18 0z"/><path d="M12 11v7.5a2 2 0 0 0 4 0"/>',
+  aventura: '<path d="M2.5 20l6.5-12 4 6.5 2.5-3.5 6 9z"/><path d="M7 11.5l2 1 1.5-1"/>',
+  barraca: '<path d="M2.5 20L12 4l9.5 16z"/><path d="M12 11l-3.5 9M12 11l3.5 9"/>',
+  limpeza: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M18.5 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  diversao: '<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.1"/><circle cx="15" cy="9" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="9" cy="15" r="1.1"/><circle cx="15" cy="15" r="1.1"/>',
+  dicas: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>',
+};
+const iconeMala = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${ICONES_MALA[k] || ICONES_MALA.diversos}</svg>`;
+const COR_GRUPO = { viagem: "#2D4BA0", camping: "#0D7A48", dicas: "#A3560A" };
+const GRUPOS_MALA = [["viagem", "Viagem"], ["camping", "Camping"], ["dicas", "Antes de viajar"]];
+const lerMarcas = () => { try { return JSON.parse(lerLS(LS_MALA)) || {}; } catch { return {}; } };
+const gravarMarcas = (m) => gravarLS(LS_MALA, JSON.stringify(m));
+const pendentesDe = (sec, m) => sec.itens.filter((it) => !m[it.id]).length;
+const textoPendentes = (p, t) => (p === 0 ? `${t} de ${t} resolvidos` : `${p} de ${t} pendente${p === 1 ? "" : "s"}`);
+const barraProgresso = (p, t, cor) => `<span class="progresso" aria-hidden="true"><i style="width:${t ? Math.round(((t - p) / t) * 100) : 0}%;background:${cor}"></i></span>`;
+
+function telaMala(secId) {
+  if (!MALA) {
+    $app.innerHTML = `<main class="tela">${topoSubapp("Mala")}<div class="carregando">Abrindo a lista…</div></main>`;
+    fetch("mala.json").then((r) => { if (!r.ok) throw 0; return r.json(); })
+      .then((j) => { MALA = j; if (location.hash.startsWith("#/mais/mala")) rotear(); })
+      .catch(() => { if (location.hash.startsWith("#/mais/mala")) $app.querySelector(".carregando").textContent = "Não consegui abrir a lista. Conecte uma vez à internet."; });
+    return;
+  }
+  const sec = secId && MALA.secoes.find((x) => x.id === secId);
+  return sec ? telaMalaSecao(sec) : telaMalaInicio();
+}
+
+function telaMalaInicio() {
+  const m = lerMarcas();
+  const todos = MALA.secoes.flatMap((x) => x.itens);
+  const p = todos.filter((it) => !m[it.id]).length;
+  $app.innerHTML = `
+  <main class="tela">
+    ${topoSubapp("Mala")}
+    <div class="mala-resumo">
+      <div><b>${p}</b> de ${todos.length} itens pendentes</div>
+      ${barraProgresso(p, todos.length, "var(--verde)")}
+      <div class="nota">Cada celular guarda a sua lista. Marque <b>OK</b> quando o item já estiver na mala e <b>NA</b> quando não se aplica.</div>
+    </div>
+    <div class="legenda-mala">
+      ${["mao", "despachar", "proibido"].map((k) => `<div><span class="bolsa" style="--bolsa:${BOLSAS[k].cor}">${BOLSAS[k].icone}</span><span>${h(BOLSAS[k].nome)}</span></div>`).join("")}
+    </div>
+    ${GRUPOS_MALA.map(([g, nome]) => {
+      const secs = MALA.secoes.filter((x) => x.grupo === g);
+      if (!secs.length) return "";
+      return `<div class="rotulo">${h(nome)}</div><div class="lista-densa">${secs.map((x) => {
+        const pp = pendentesDe(x, m), t = x.itens.length;
+        return `<a class="cart-item secao-mala ${pp === 0 ? "feita" : ""}" href="#/mais/mala/${x.id}">
+          <span class="ic" style="background:${COR_GRUPO[g]};color:#fff">${iconeMala(x.icone)}</span>
+          <span class="meio"><span class="t">${h(x.nome)}</span><span class="s">${h(textoPendentes(pp, t))}</span>${barraProgresso(pp, t, COR_GRUPO[g])}</span>
+          <span class="seta">${pp === 0 ? `<span class="feito-ok">${I.ok}</span>` : I.seta}</span>
+        </a>`;
+      }).join("")}</div>`;
+    }).join("")}
+    <button type="button" class="rodape-acao" id="mala-limpar">Recomeçar a lista deste celular</button>
+  </main>`;
+  document.getElementById("mala-limpar").addEventListener("click", () => {
+    const antes = lerMarcas();
+    if (!Object.keys(antes).length) return avisar("A lista já está zerada.");
+    gravarMarcas({});
+    telaMalaInicio();
+    avisar("Lista zerada.", { rotulo: "Desfazer", tempo: 7000, fazer: () => { gravarMarcas(antes); rotear(); } });
+  });
+}
+
+function itemMala(it, m) {
+  const b = BOLSAS[it.t] || BOLSAS.despachar;
+  const est = m[it.id] || "";
+  return `<div class="mala-item ${it.t === "dica" ? "dica" : ""}" data-item="${h(it.id)}" data-estado="${est}">
+    <span class="bolsa" style="--bolsa:${b.cor}" title="${h(b.nome)}" role="img" aria-label="${h(b.nome)}">${b.icone}</span>
+    <div class="meio"><div class="t">${h(it.n)}</div>${it.nota ? `<div class="s">${h(it.nota)}</div>` : ""}</div>
+    <button type="button" class="marca marca-ok" data-marca="ok" aria-pressed="${est === "ok"}" aria-label="OK, já está na mala">OK</button>
+    <button type="button" class="marca marca-na" data-marca="na" aria-pressed="${est === "na"}" aria-label="Não se aplica">NA</button>
+  </div>`;
+}
+
+function telaMalaSecao(sec) {
+  const m = lerMarcas();
+  const i = MALA.secoes.indexOf(sec);
+  const ant = MALA.secoes[i - 1], prox = MALA.secoes[i + 1];
+  const t = sec.itens.length;
+  const cor = COR_GRUPO[sec.grupo];
+  const tipos = [...new Set(sec.itens.map((it) => it.t))].filter((k) => k !== "dica");
+  $app.innerHTML = `
+  <main class="tela">
+    <a class="voltar" href="#/mais/mala">${I.voltar} Mala</a>
+    <div class="secao-topo">
+      <span class="subapp-icone mini" style="background:${cor}">${iconeMala(sec.icone)}</span>
+      <div><div class="sub-tela">${h(GRUPOS_MALA.find((g) => g[0] === sec.grupo)[1])}</div><h1 class="titulo-tela">${h(sec.nome)}</h1></div>
+    </div>
+    <div class="mala-resumo">
+      <div id="mala-contador"></div>
+      <span id="mala-barra"></span>
+    </div>
+    ${tipos.length > 1 ? `<div class="legenda-mala compacta">${tipos.map((k) => `<div><span class="bolsa" style="--bolsa:${BOLSAS[k].cor}">${BOLSAS[k].icone}</span><span>${h(BOLSAS[k].nome)}</span></div>`).join("")}</div>` : ""}
+    <div class="filtros" role="group" aria-label="Mostrar">
+      <button type="button" data-filtro="todos" aria-pressed="${!malaSoPendentes}">Todos</button>
+      <button type="button" data-filtro="pendentes" aria-pressed="${malaSoPendentes}">Só pendentes</button>
+    </div>
+    <div class="lista-mala ${malaSoPendentes ? "so-pendentes" : ""}" id="lista-mala">${sec.itens.map((it) => itemMala(it, m)).join("")}</div>
+    <div class="tudo-pronto" id="tudo-pronto" hidden>${I.ok} Nada pendente nesta seção.</div>
+    <button type="button" class="rodape-acao" id="mala-na">Marcar os pendentes como NA</button>
+    <nav class="mala-nav">
+      ${ant ? `<a class="botao botao-claro" href="#/mais/mala/${ant.id}">${I.voltar}<span>${h(ant.nome)}</span></a>` : "<span></span>"}
+      ${prox ? `<a class="botao botao-tinta" href="#/mais/mala/${prox.id}"><span>${h(prox.nome)}</span>${I.seta}</a>` : `<a class="botao botao-tinta" href="#/mais/mala">Voltar à lista</a>`}
+    </nav>
+  </main>`;
+  const $lista = document.getElementById("lista-mala");
+  const atualizarContador = () => {
+    const mm = lerMarcas();
+    const p = pendentesDe(sec, mm);
+    document.getElementById("mala-contador").innerHTML = p === 0 ? `<b>Tudo resolvido</b> · ${t} de ${t}` : `<b>${p}</b> de ${t} pendente${p === 1 ? "" : "s"}`;
+    document.getElementById("mala-barra").innerHTML = barraProgresso(p, t, cor);
+    document.getElementById("mala-na").hidden = p === 0;
+    document.getElementById("tudo-pronto").hidden = !(malaSoPendentes && p === 0);
+  };
+  atualizarContador();
+  $lista.addEventListener("click", (e) => {
+    const bt = e.target.closest("[data-marca]");
+    if (!bt) return;
+    const linha = bt.closest("[data-item]");
+    const id = linha.dataset.item;
+    const mm = lerMarcas();
+    const novo = mm[id] === bt.dataset.marca ? "" : bt.dataset.marca;
+    if (novo) mm[id] = novo; else delete mm[id];
+    gravarMarcas(mm);
+    linha.dataset.estado = novo;
+    linha.querySelectorAll("[data-marca]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.marca === novo)));
+    linha.classList.remove("saindo");
+    if (malaSoPendentes && novo) { linha.classList.add("saindo"); setTimeout(() => linha.classList.remove("saindo"), 700); }
+    atualizarContador();
+  });
+  $app.querySelectorAll("[data-filtro]").forEach((b) => b.addEventListener("click", () => {
+    malaSoPendentes = b.dataset.filtro === "pendentes";
+    $app.querySelectorAll("[data-filtro]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $lista.classList.toggle("so-pendentes", malaSoPendentes);
+    atualizarContador();
+  }));
+  document.getElementById("mala-na").addEventListener("click", () => {
+    const antes = lerMarcas();
+    const mm = { ...antes };
+    const ids = sec.itens.filter((it) => !mm[it.id]).map((it) => it.id);
+    ids.forEach((id) => (mm[id] = "na"));
+    gravarMarcas(mm);
+    telaMalaSecao(sec);
+    avisar(`${ids.length} ${ids.length === 1 ? "item marcado" : "itens marcados"} como NA.`, { rotulo: "Desfazer", tempo: 7000, fazer: () => { gravarMarcas(antes); rotear(); } });
+  });
+}
+
 /* ---------- roteamento ---------- */
 function marcarAba(nome) {
   $abas.querySelectorAll("a").forEach((a) => (a.dataset.aba === nome ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
@@ -1025,7 +1364,7 @@ function rotear() {
   if (rota === "roteiro") { marcarAba("roteiro"); return telaRoteiro(); }
   if (rota === "carteira") { marcarAba("carteira"); return telaCarteira(); }
   if (rota === "cambio") { marcarAba("cambio"); return telaCambio(); }
-  if (rota === "mais") { marcarAba("mais"); const s = SUBAPPS.find((x) => x.id === a); return s ? s.tela() : telaMais(); }
+  if (rota === "mais") { marcarAba("mais"); const s = SUBAPPS.find((x) => x.id === a); return s ? s.tela(b) : telaMais(); }
   marcarAba("hoje");
   telaHoje();
 }
