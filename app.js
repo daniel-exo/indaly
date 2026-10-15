@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v13";
+const VERSAO_APP = "v14";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -81,6 +81,16 @@ const PAISES = {
   NP: { nome: "Nepal", cor: "#C3122F", tint: "#F8D3D9" },
 };
 const OURO = { nome: "Brasil", cor: "#F2C230", tint: "#FBEFC4", claro: true };
+
+/* o cachorro do Indaly (logo). Desenho gerado por ferramentas/cao.py */
+const CAO = '<path d="M31 43 L25.5 15 C25.2 13.3 26.8 12.4 28 13.4 L46 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M69 43 L74.5 15 C74.8 13.3 73.2 12.4 72 13.4 L54 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M33 35 L29.5 20 L40 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M67 35 L70.5 20 L60 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M50 25 C65 25 73 36 73 50 C73 63 64 72 50 72 C36 72 27 63 27 50 C27 36 35 25 50 25 Z" fill="#FFFFFF"/><g class="olho-aberto"><circle cx="41" cy="47" r="3.2" fill="#14224F"/><circle cx="59" cy="47" r="3.2" fill="#14224F"/></g><path d="M44.5 56 H55.5 C55.5 60 52.5 62 50 62 C47.5 62 44.5 60 44.5 56 Z" fill="#14224F"/><path d="M50 62 V65 M50 65 C48.2 67.2 45.6 67.2 44.2 65.4 M50 65 C51.8 67.2 54.4 67.2 55.8 65.4" fill="none" stroke="#14224F" stroke-width="1.9" stroke-linecap="round"/><ellipse cx="50" cy="36" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="27.83" cy="75.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="33.03" cy="81.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="40.82" cy="84.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="50.00" cy="86.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="59.18" cy="84.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="66.97" cy="81.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="72.17" cy="75.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="74.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/>';
+const CAO_OLHOS = '<path d="M31 43 L25.5 15 C25.2 13.3 26.8 12.4 28 13.4 L46 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M69 43 L74.5 15 C74.8 13.3 73.2 12.4 72 13.4 L54 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M33 35 L29.5 20 L40 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M67 35 L70.5 20 L60 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M50 25 C65 25 73 36 73 50 C73 63 64 72 50 72 C36 72 27 63 27 50 C27 36 35 25 50 25 Z" fill="#FFFFFF"/><g class="olho-aberto"><circle cx="41" cy="47" r="3.2" fill="#14224F"/><circle cx="59" cy="47" r="3.2" fill="#14224F"/></g><g class="olho-fechado"><path d="M37.2 46.6 Q41 50.4 44.8 46.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/><path d="M55.2 46.6 Q59 50.4 62.8 46.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/></g><path d="M44.5 56 H55.5 C55.5 60 52.5 62 50 62 C47.5 62 44.5 60 44.5 56 Z" fill="#14224F"/><path d="M50 62 V65 M50 65 C48.2 67.2 45.6 67.2 44.2 65.4 M50 65 C51.8 67.2 54.4 67.2 55.8 65.4" fill="none" stroke="#14224F" stroke-width="1.9" stroke-linecap="round"/><ellipse cx="50" cy="36" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="27.83" cy="75.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="33.03" cy="81.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="40.82" cy="84.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="50.00" cy="86.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="59.18" cy="84.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="66.97" cy="81.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="72.17" cy="75.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="74.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/>';
+const CAO_FRASE = '<path d="M31 43 L25.5 15 C25.2 13.3 26.8 12.4 28 13.4 L46 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M69 43 L74.5 15 C74.8 13.3 73.2 12.4 72 13.4 L54 28 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/><path d="M33 35 L29.5 20 L40 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M67 35 L70.5 20 L60 29 Z" fill="#14224F" stroke="#14224F" stroke-width="1.5" stroke-linejoin="round"/><path d="M50 25 C65 25 73 36 73 50 C73 63 64 72 50 72 C36 72 27 63 27 50 C27 36 35 25 50 25 Z" fill="#FFFFFF"/><g class="olho-aberto"><circle cx="41" cy="47" r="3.2" fill="#14224F"/><circle cx="59" cy="47" r="3.2" fill="#14224F"/></g><path d="M44.5 56 H55.5 C55.5 60 52.5 62 50 62 C47.5 62 44.5 60 44.5 56 Z" fill="#14224F"/><path d="M50 62 V65 M50 65 C48.2 67.2 45.6 67.2 44.2 65.4 M50 65 C51.8 67.2 54.4 67.2 55.8 65.4" fill="none" stroke="#14224F" stroke-width="1.9" stroke-linecap="round"/><ellipse cx="50" cy="36" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="27.83" cy="75.51" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="33.03" cy="81.02" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="40.82" cy="84.71" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="50.00" cy="86.00" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="59.18" cy="84.71" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="66.97" cy="81.02" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="72.17" cy="75.51" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/><circle cx="74.00" cy="69.00" r="5" fill="#FFFFFF" stroke="#A3560A" stroke-width="1.8"/>';
+function caoSVG(tam, { fundo = true, olhos = "abertos", classe = "", rotulo = "" } = {}) {
+  const corpo = olhos === "ambos" ? CAO_OLHOS : CAO;
+  const a11y = rotulo ? `role="img" aria-label="${h(rotulo)}"` : 'aria-hidden="true"';
+  return `<svg class="cao ${classe}" width="${tam}" height="${tam}" style="width:${tam}px;height:${tam}px" viewBox="0 0 100 100" ${a11y}>${fundo ? '<rect width="100" height="100" rx="22" fill="#EE8A24"></rect>' : ""}${corpo}</svg>`;
+}
 
 /* ---------- estado ---------- */
 let R = null;
@@ -539,11 +549,11 @@ function telaBloqueio(msg = "") {
   $abas.hidden = true;
   $app.innerHTML = `
   <main class="bloqueio">
-    <div class="marca"><img src="icons/icon-192.png" alt=""><h1>Indaly</h1></div>
+    <div class="marca">${caoSVG(72, { olhos: "ambos", classe: "cao-senha" })}<h1>Indaly</h1></div>
     <p>Índia, Nepal e Itália · 30 de outubro a 17 de novembro de 2026.<br>Digite a senha do grupo uma vez neste celular.</p>
     <form id="form-senha" autocomplete="off">
       <label for="senha">SENHA</label>
-      <input id="senha" name="senha" type="password" autocomplete="current-password" required>
+      <input id="senha" name="senha" type="password" autocomplete="current-password" placeholder=" " required>
       <button class="botao botao-papel" type="submit">Abrir o cofre</button>
       <div class="erro" role="alert">${h(msg)}</div>
     </form>
@@ -714,7 +724,7 @@ function telaHoje() {
       </a>
       ${proximosDias(R.dias.slice(0, 4))}`;
   } else if (hoje > R.fim) {
-    corpo = `<div class="proximo"><div class="rot">VIAGEM CONCLUÍDA</div><div class="t">Bem-vindos de volta!</div></div><a class="linha-lista" href="#/roteiro"><div class="meio"><div class="t">Rever o roteiro</div></div><span class="seta">${I.seta}</span></a>`;
+    corpo = `<div class="proximo cao-fim">${caoSVG(84)}<div><div class="rot">VIAGEM CONCLUÍDA</div><div class="t">Bem-vindos de volta!</div></div></div><a class="linha-lista" href="#/roteiro"><div class="meio"><div class="t">Rever o roteiro</div></div><span class="seta">${I.seta}</span></a>`;
   } else {
     const dia = R.dias[i];
     const pais = corDia(dia);
@@ -745,6 +755,7 @@ function telaHoje() {
         <div class="tracejado"></div>
         <div class="pe">${barra19(i)}<div class="fichas fichas-claras">${fichaTempo(dia)}</div></div>
       </a>
+      ${dia.data === "2026-11-07" ? `<div class="kukur">${caoSVG(48)}<div><b>Hoje é Kukur Tihar</b><span>O dia dos cachorros: em Kathmandu eles ganham guirlanda de flores e tika na testa. Foi daqui que veio o nosso logo.</span></div></div>` : ""}
       ${foco ? cartaoDiaDeVoo(foco, agoraApp()) : `<div class="proximo">
         <div class="rot">${rot === "HOJE" ? "HOJE" : "PRÓXIMO · " + rot}</div>
         <div class="t">${h(a.titulo)}</div>
@@ -1154,7 +1165,7 @@ const FUSOS = [
 /* sub-apps da aba Mais: para acrescentar um novo, basta incluir aqui e criar a função da página */
 const SUBAPPS = [
   { id: "emergencia", nome: "Emergência", cor: "#C3122F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg>', tela: () => telaEmergencia() },
-  { id: "frases", nome: "Frases", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3.5V15H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2.5L16 19h-3a2 2 0 0 1-2-2"/></svg>', tela: () => telaFrases() },
+  { id: "frases", nome: "Frases", cor: "#A3560A", icone: `<svg class="icone-frase" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-6 20) scale(0.8)">${CAO_FRASE}</g><path d="M58 10 H90 A6 6 0 0 1 96 16 V36 A6 6 0 0 1 90 42 H72 L62 51 L64 42 H58 A6 6 0 0 1 52 36 V16 A6 6 0 0 1 58 10 Z" fill="#FFFFFF"></path><circle cx="64.5" cy="26" r="3.2" fill="#A3560A"></circle><circle cx="74" cy="26" r="3.2" fill="#A3560A"></circle><circle cx="83.5" cy="26" r="3.2" fill="#A3560A"></circle></svg>`, tela: () => telaFrases() },
   { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
   { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
@@ -1579,6 +1590,7 @@ function telaMalaInicio() {
   $app.innerHTML = `
   <main class="tela">
     ${topoSubapp("Mala")}
+    ${p === 0 ? `<div class="mala-pronta">${caoSVG(72)}<div><b>Mala pronta!</b><span>Tudo marcado como OK ou NA neste celular. Boa viagem.</span></div></div>` : ""}
     <div class="mala-resumo">
       <div><b>${p}</b> de ${todos.length} itens pendentes</div>
       ${barraProgresso(p, todos.length, "var(--verde)")}
@@ -1645,7 +1657,7 @@ function telaMalaSecao(sec) {
       <button type="button" data-filtro="pendentes" aria-pressed="${malaSoPendentes}">Só pendentes</button>
     </div>
     <div class="lista-mala ${malaSoPendentes ? "so-pendentes" : ""}" id="lista-mala">${sec.itens.map((it) => itemMala(it, m)).join("")}</div>
-    <div class="tudo-pronto" id="tudo-pronto" hidden>${I.ok} Nada pendente nesta seção.</div>
+    <div class="tudo-pronto" id="tudo-pronto" hidden>${caoSVG(40)}<span>Nada pendente nesta seção.</span></div>
     <button type="button" class="rodape-acao" id="mala-na">Marcar os pendentes como NA</button>
     <nav class="mala-nav">
       ${ant ? `<a class="botao botao-claro" href="#/mais/mala/${ant.id}">${I.voltar}<span>${h(ant.nome)}</span></a>` : "<span></span>"}
@@ -1659,7 +1671,7 @@ function telaMalaSecao(sec) {
     document.getElementById("mala-contador").innerHTML = p === 0 ? `<b>Tudo resolvido</b> · ${t} de ${t}` : `<b>${p}</b> de ${t} pendente${p === 1 ? "" : "s"}`;
     document.getElementById("mala-barra").innerHTML = barraProgresso(p, t, cor);
     document.getElementById("mala-na").hidden = p === 0;
-    document.getElementById("tudo-pronto").hidden = !(malaSoPendentes && p === 0);
+    document.getElementById("tudo-pronto").hidden = p !== 0;
   };
   atualizarContador();
   $lista.addEventListener("click", (e) => {
@@ -1713,7 +1725,7 @@ function rotear() {
 }
 
 async function entrar() {
-  $app.innerHTML = '<div class="carregando">Abrindo o roteiro…</div>';
+  $app.innerHTML = `<div class="carregando">${caoSVG(64, { classe: "respira" })}<div>Abrindo o roteiro…</div></div>`;
   await carregarRoteiro();
   await carregarCambio();
   $abas.hidden = false;
