@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v9";
+const VERSAO_APP = "v10";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -58,11 +58,13 @@ const TEMPO_ICONES = {
   neblina: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h16M3 13h18M5 17h14"/></svg>',
   chuva: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 15h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.5 9 3.2 3.2 0 0 0 7 15z"/><path d="M9 18l-1 2.5M13 18l-1 2.5M17 18l-1 2.5"/></svg>',
   tempestade: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14h10a4 4 0 0 0 .4-8A5.5 5.5 0 0 0 6.5 8 3.2 3.2 0 0 0 7 14z"/><path d="M12.5 15l-2 3.5h3l-2 3.5"/></svg>',
+  lua: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/></svg>',
+  "lua-parcial": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 8.2A4 4 0 0 1 9 3.6a4.6 4.6 0 1 0 4.5 4.6z"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>',
   neve: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9"/></svg>',
 };
-function climaDe(cod) {
-  if (cod === 0) return ["sol", "Céu limpo"];
-  if (cod <= 2) return ["parcial", "Poucas nuvens"];
+function climaDe(cod, noite = false) {
+  if (cod === 0) return [noite ? "lua" : "sol", "Céu limpo"];
+  if (cod <= 2) return [noite ? "lua-parcial" : "parcial", "Poucas nuvens"];
   if (cod === 3) return ["nuvem", "Nublado"];
   if (cod === 45 || cod === 48) return ["neblina", "Neblina"];
   if (cod >= 51 && cod <= 57) return ["chuva", "Garoa"];
@@ -152,12 +154,14 @@ async function guardarOffline() {
 
 /* ---------- previsão do tempo (Open-Meteo, sem chave) ---------- */
 async function atualizarTempo() {
-  if (TEMPO && Date.now() - TEMPO.em < 3 * 3600 * 1000) return;
+  if (TEMPO?.v === 2 && Date.now() - TEMPO.em < 3 * 3600 * 1000) return;
   const cidades = [];
   for (const d of R.dias) if (!cidades.find((c) => c.cidade === d.cidade)) cidades.push({ cidade: d.cidade, lat: d.lat, lon: d.lon });
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + cidades.map((c) => c.lat).join(",") +
     "&longitude=" + cidades.map((c) => c.lon).join(",") +
-    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&forecast_days=16";
+    "&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,wind_speed_10m_max,uv_index_max" +
+    "&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code,wind_speed_10m,relative_humidity_2m,is_day" +
+    "&timezone=auto&forecast_days=16";
   try {
     const res = await fetch(url);
     if (!res.ok) return;
@@ -166,12 +170,17 @@ async function atualizarTempo() {
     const porCidade = {};
     dados.forEach((d, i) => {
       const m = {};
-      d.daily.time.forEach((t, j) => {
-        m[t] = { cod: d.daily.weather_code[j], max: d.daily.temperature_2m_max[j], min: d.daily.temperature_2m_min[j], chuva: d.daily.precipitation_probability_max[j] };
+      const D = d.daily, H = d.hourly;
+      D.time.forEach((t, j) => {
+        m[t] = { cod: D.weather_code[j], max: D.temperature_2m_max[j], min: D.temperature_2m_min[j], chuva: D.precipitation_probability_max[j], mm: D.precipitation_sum?.[j], vento: D.wind_speed_10m_max?.[j], uv: D.uv_index_max?.[j], horas: [] };
+      });
+      (H?.time || []).forEach((t, j) => {
+        const dia = m[t.slice(0, 10)];
+        if (dia) dia.horas.push([Number(t.slice(11, 13)), H.temperature_2m[j], H.apparent_temperature[j], H.precipitation_probability[j], H.precipitation[j], H.weather_code[j], H.wind_speed_10m[j], H.relative_humidity_2m[j], H.is_day[j]]);
       });
       porCidade[cidades[i].cidade] = m;
     });
-    TEMPO = { em: Date.now(), porCidade };
+    TEMPO = { v: 2, em: Date.now(), porCidade };
     gravarLS(LS_TEMPO, JSON.stringify(TEMPO));
     const r = location.hash;
     if (r.startsWith("#/mais/tempo") || r.startsWith("#/dia") || r.startsWith("#/hoje") || r === "") rotear();
@@ -211,7 +220,7 @@ function fichaTempo(dia) {
   const t = tempoDoDia(dia);
   if (!t) return "";
   const [ic, txt] = climaDe(t.cod);
-  return `<span class="ficha ficha-tempo" title="${h(txt)}">${TEMPO_ICONES[ic]} ${Math.round(t.max)}° / ${Math.round(t.min)}°</span>`;
+  return `<a class="ficha ficha-tempo" href="#/mais/tempo/${dia.data}" title="${h(txt)} · ver hora a hora">${TEMPO_ICONES[ic]} ${Math.round(t.max)}° / ${Math.round(t.min)}°</a>`;
 }
 
 /* ---------- visor de documentos ---------- */
@@ -909,7 +918,7 @@ const SUBAPPS = [
   { id: "emergencia", nome: "Emergência", cor: "#C3122F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 3.5h5v6h6v5h-6v6h-5v-6h-6v-5h6z"/></svg>', tela: () => telaEmergencia() },
   { id: "frases", nome: "Frases", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h11a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H9l-4 3.5V15H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M17 9h3a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-1v2.5L16 19h-3a2 2 0 0 1-2-2"/></svg>', tela: () => telaFrases() },
   { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
-  { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: () => telaTempo() },
+  { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4.5V3M3.5 9H2M4.5 5.5l-1-1M12.5 5.5l1-1"/><path d="M5.2 11.5A4 4 0 1 1 12 7.6"/><path d="M7 20h10a4 4 0 0 0 0-8 5 5 0 0 0-9.6 1.5A3.3 3.3 0 0 0 7 20z"/></svg>', tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
   { id: "apps", nome: "Apps úteis", cor: "#14224F", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>', tela: () => telaFusos() },
   { id: "atualizar", nome: "Atualizar", cor: "#565D78", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4.2L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.8 4.2l1.2-1.7M20 20v-4.5h-4.5"/></svg>', tela: () => telaAtualizar() },
@@ -947,16 +956,88 @@ function telaTempo() {
     const linhaSol = sol ? `<div class="s sol-linha">${SOL_ICONES.nasce}sol nasce ${sol.nasce} · se põe ${sol.poe}</div>` : "";
     if (!t) {
       const libera = isoDe(new Date(dataDe(d.data).getTime() - 15 * 86400000));
-      return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div>${linhaSol}</div></a>`;
+      return `<a class="linha-lista" href="#/mais/tempo/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div>${linhaSol}</div></a>`;
     }
     const [ic, txt] = climaDe(t.cod);
-    return `<a class="linha-lista" href="#/dia/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div>${linhaSol}</div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
+    return `<a class="linha-lista" href="#/mais/tempo/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div>${linhaSol}</div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
   }).join("");
   $app.innerHTML = `
   <main class="tela">
     ${topoSubapp("Tempo")}
     <div class="lista">${previsao || '<div class="nota">A viagem já acabou.</div>'}</div>
-    <div class="nota">Previsão para a cidade de cada dia; sai até 16 dias antes. Nascer e pôr do sol no horário local de cada cidade. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+    <div class="nota">Toque num dia para ver a previsão hora a hora. Previsão para a cidade de cada dia; sai até 16 dias antes. Nascer e pôr do sol no horário local de cada cidade. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+  </main>`;
+}
+
+const fmtMm = (v) => (v >= 10 ? Math.round(v) : String(Math.round(v * 10) / 10).replace(".", ","));
+function telaTempoDia(iso) {
+  const i = idxDia(iso);
+  if (i < 0) return telaTempo();
+  const dia = R.dias[i];
+  const p = corDia(dia);
+  const t = tempoDoDia(dia);
+  const sol = textoSol(dia);
+  const ant = R.dias[i - 1], prox = R.dias[i + 1];
+  const horaHoje = iso === new Intl.DateTimeFormat("en-CA", { timeZone: dia.fuso }).format(new Date()) ? Number(horaEm(dia.fuso).slice(0, 2)) : -1;
+  const marcos = {};
+  for (const a of dia.atividades) {
+    const m = /^(\d{2}):\d{2}$/.exec(a.hora || "");
+    if (m) (marcos[Number(m[1])] ||= []).push(a.hora + " " + a.titulo);
+  }
+  if (sol) {
+    (marcos[Number(sol.nasce.slice(0, 2))] ||= []).push("sol nasce " + sol.nasce);
+    (marcos[Number(sol.poe.slice(0, 2))] ||= []).push("sol se põe " + sol.poe);
+  }
+  let corpo;
+  if (!t) {
+    const libera = isoDe(new Date(dataDe(iso).getTime() - 15 * 86400000));
+    corpo = `<div class="aviso aviso-pendente">${I.relogio}<div>${iso > libera && hojeISO() < libera ? `A previsão deste dia sai a partir de <b>${h(dataMedia(libera))}</b>.` : "Previsão indisponível agora. Abra com internet para baixar."}</div></div>`;
+  } else {
+    const [ic, txt] = climaDe(t.cod);
+    const horas = t.horas || [];
+    const tMin = Math.min(...horas.map((x) => x[1])), tMax = Math.max(...horas.map((x) => x[1]));
+    const larg = (v) => (horas.length && tMax > tMin ? 18 + ((v - tMin) / (tMax - tMin)) * 82 : 60);
+    corpo = `
+    <section class="tempo-resumo" style="--pais:${p.cor}">
+      <div class="tempo-grande">${TEMPO_ICONES[ic]}<div><b>${Math.round(t.max)}°</b><span>mín ${Math.round(t.min)}°</span></div></div>
+      <div class="tempo-txt">${h(txt)}</div>
+      <div class="tempo-dados">
+        <div><small>Chuva</small><b>${t.chuva ?? "—"}%</b>${t.mm != null ? `<span>${fmtMm(t.mm)} mm</span>` : ""}</div>
+        <div><small>Vento máx.</small><b>${t.vento != null ? Math.round(t.vento) : "—"}</b><span>km/h</span></div>
+        <div><small>UV máx.</small><b>${t.uv != null ? Math.round(t.uv) : "—"}</b><span>${t.uv >= 8 ? "muito alto" : t.uv >= 6 ? "alto" : t.uv >= 3 ? "moderado" : "baixo"}</span></div>
+      </div>
+      ${sol ? `<div class="tempo-sol">${SOL_ICONES.nasce} nasce ${sol.nasce} · ${SOL_ICONES.poe} se põe ${sol.poe}</div>` : ""}
+    </section>
+    ${horas.length ? `
+    <div class="rotulo">Hora a hora</div>
+    <div class="horas">
+      <div class="hora-cab" aria-hidden="true"><span>hora</span><span></span><span>temperatura</span><span>chuva</span></div>
+      ${horas.map(([hh, temp, sens, prob, mm, cod, vento, umid, ehDia]) => {
+        const [hi, ht] = climaDe(cod, !ehDia);
+        const marco = marcos[hh];
+        return `<div class="hora-linha ${hh === horaHoje ? "agora" : ""} ${!ehDia ? "noite" : ""}" id="hora-${hh}">
+          <span class="hh">${String(hh).padStart(2, "0")}h</span>
+          <span class="hi" title="${h(ht)}">${TEMPO_ICONES[hi]}</span>
+          <span class="ht"><i style="width:${larg(temp)}%"></i><b>${Math.round(temp)}°</b>${Math.round(sens) !== Math.round(temp) ? `<small>sensação ${Math.round(sens)}°</small>` : ""}</span>
+          <span class="hc ${prob >= 50 ? "forte" : ""}"><b>${prob ?? 0}%</b>${mm > 0 ? `<small>${fmtMm(mm)} mm</small>` : ""}</span>
+          ${marco ? `<span class="marco">${marco.map(h).join(" · ")}</span>` : ""}
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="nota">Horário local de ${h(dia.cidade)}. A barra mostra a temperatura em relação ao resto do dia; chuva é a chance de chover naquela hora.</div>` : `<div class="nota">A previsão hora a hora aparece quando o app baixar a previsão de novo (precisa de internet).</div>`}`;
+  }
+  $app.innerHTML = `
+  <main class="tela">
+    <a class="voltar" href="#/mais/tempo">${I.voltar} Tempo</a>
+    <div class="tempo-cab">
+      <div><div class="sub-tela">${h(dataLonga(iso))}</div><h1 class="titulo-tela">${h(dia.cidade)}</h1></div>
+      <a class="botao botao-claro" href="#/dia/${iso}">Roteiro${I.seta}</a>
+    </div>
+    ${corpo}
+    <nav class="mala-nav">
+      ${ant ? `<a class="botao botao-claro" href="#/mais/tempo/${ant.data}">${I.voltar}<span>${h(diaCurto(ant.data))} · ${h(ant.cidade)}</span></a>` : "<span></span>"}
+      ${prox ? `<a class="botao botao-tinta" href="#/mais/tempo/${prox.data}"><span>${h(diaCurto(prox.data))} · ${h(prox.cidade)}</span>${I.seta}</a>` : "<span></span>"}
+    </nav>
   </main>`;
 }
 

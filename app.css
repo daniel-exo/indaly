@@ -486,3 +486,40 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 .mala-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .mala-nav .botao span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 a.cart-item { text-decoration: none; }
+
+/* tempo do dia, hora a hora */
+a.ficha { text-decoration: none; color: inherit; }
+.tempo-cab { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.tempo-cab .botao { min-height: 40px; padding: 0 12px; font-size: 13px; flex-shrink: 0; }
+.tempo-resumo { background: var(--pais); color: #fff; border-radius: 20px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.tempo-grande { display: flex; align-items: center; gap: 14px; }
+.tempo-grande svg { font-size: 56px; stroke-width: 1.6; }
+.tempo-grande b { font-family: var(--display); font-weight: 800; font-size: 56px; line-height: 0.9; letter-spacing: -0.03em; display: block; }
+.tempo-grande span { font-size: 15px; font-weight: 600; opacity: 0.9; }
+.tempo-txt { font-size: 16px; font-weight: 600; }
+.tempo-dados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tempo-dados > div { background: rgba(255,255,255,0.16); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; line-height: 1.2; }
+.tempo-dados small { font-size: 11px; opacity: 0.85; }
+.tempo-dados b { font-family: var(--display); font-weight: 600; font-size: 22px; }
+.tempo-dados span { font-size: 11px; opacity: 0.85; }
+.tempo-sol { display: flex; align-items: center; gap: 5px; font-size: 13px; }
+.tempo-sol svg { font-size: 16px; }
+.horas { background: #fff; border-radius: 16px; overflow: hidden; }
+.hora-cab, .hora-linha { display: grid; grid-template-columns: 38px 28px minmax(0, 1fr) 62px; align-items: center; gap: 8px; padding: 0 12px; }
+.hora-cab { padding-top: 8px; padding-bottom: 4px; font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--apagado); }
+.hora-cab span:last-child { text-align: right; }
+.hora-linha { min-height: 44px; border-top: 1px solid var(--linha-2); padding-top: 4px; padding-bottom: 4px; }
+.hora-linha.noite { background: #F7F7FA; }
+.hora-linha.agora { box-shadow: inset 4px 0 0 var(--acafrao); background: var(--acafrao-claro); }
+.hora-linha .hh { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--apagado); }
+.hora-linha .hi svg { font-size: 22px; }
+.hora-linha .ht { position: relative; display: flex; align-items: baseline; gap: 8px; min-height: 26px; }
+.hora-linha .ht i { position: absolute; left: 0; top: 50%; height: 24px; transform: translateY(-50%); border-radius: 7px; background: linear-gradient(90deg, #FCE7CF, #F8C795); z-index: 0; }
+.hora-linha .ht b, .hora-linha .ht small { position: relative; z-index: 1; padding-left: 7px; }
+.hora-linha .ht b { font-family: var(--display); font-weight: 600; font-size: 17px; }
+.hora-linha .ht small { font-size: 11px; color: var(--acafrao-escuro); padding-left: 0; }
+.hora-linha .hc { display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1; }
+.hora-linha .hc b { font-family: var(--mono); font-size: 13px; color: var(--apagado); }
+.hora-linha .hc.forte b { color: #1F5FBF; }
+.hora-linha .hc small { font-size: 11px; color: #1F5FBF; }
+.hora-linha .marco { grid-column: 2 / -1; font-size: 12px; font-weight: 600; color: var(--tinta); background: var(--linha-2); border-radius: 6px; padding: 2px 7px; justify-self: start; margin-bottom: 2px; }
