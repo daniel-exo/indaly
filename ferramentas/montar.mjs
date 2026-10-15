@@ -75,6 +75,8 @@ function acharArquivos(pasta) {
   return mapa;
 }
 const arquivos = acharArquivos(args.docs);
+// --extra: outra pasta (ex.: fotos do dia já recortadas)
+if (args.extra) for (const [k, v] of acharArquivos(args.extra)) arquivos.set(k, v);
 
 const MIME = { ".pdf": "application/pdf", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".heic": "image/heic" };
 
