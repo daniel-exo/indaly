@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v11";
+const VERSAO_APP = "v12";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -397,7 +397,10 @@ async function abrirDoc(id) {
       $visorComp.onclick = () => navigator.share({ files: [arquivo], title: doc.nome }).catch(() => {});
     }
     if (doc.tipo.startsWith("image/")) {
-      $visorCorpo.innerHTML = `<img src="${urlAtual}" alt="${h(doc.nome)}">`;
+      $visorCorpo.innerHTML = `<img class="visor-img" src="${urlAtual}" alt="${h(doc.nome)}">`;
+      const im = $visorCorpo.firstChild;
+      // imagem pequena (ex.: cartão com QR) ampliada: sem suavizar, para o QR ficar nítido
+      im.onload = () => { if (im.naturalWidth < im.clientWidth * (window.devicePixelRatio || 1) * 0.9) im.classList.add("nitida"); };
       return;
     }
     if (!pdfjs) {
@@ -568,6 +571,23 @@ function telaBloqueio(msg = "") {
   setTimeout(() => document.getElementById("senha")?.focus(), 50);
 }
 
+/* foto do dia (aba Hoje): fica trancada no cofre como os documentos */
+const FOTOS = new Map();
+const fotoDia = (dia) => (dia.foto && R.docs[dia.foto]?.arquivo ? `<div class="foto-dia"><img alt="" data-foto="${h(dia.foto)}"></div>` : "");
+async function carregarFotos() {
+  for (const img of $app.querySelectorAll("img[data-foto]")) {
+    const id = img.dataset.foto;
+    try {
+      if (!FOTOS.has(id)) {
+        const d = R.docs[id];
+        FOTOS.set(id, URL.createObjectURL(new Blob([await decifrar(await buscarBytes(d.arquivo))], { type: d.tipo })));
+      }
+      img.onload = () => img.classList.add("ok");
+      img.src = FOTOS.get(id);
+    } catch (e) { img.closest(".foto-dia")?.remove(); }
+  }
+}
+
 function telaHoje() {
   const hoje = hojeISO();
   const agora = new Date();
@@ -587,6 +607,7 @@ function telaHoje() {
           <div class="cidade">${h(d0.cidade)}</div>
           <div class="l3">${h(a0.hora)} · ${h(a0.titulo)}</div>
         </div>
+        ${fotoDia(d0)}
         <div class="tracejado"></div>
         <div class="pe">${barra19(-1)}</div>
       </a>
@@ -618,6 +639,7 @@ function telaHoje() {
           <div class="cidade">${h(dia.cidade)}</div>
           <div class="l3">${h(PAISES[dia.pais].nome)}${dia.hospedagem?.nome && dia.hospedagem.nome !== "Avião" ? " · dormir: " + h(dia.hospedagem.nome) : ""}</div>
         </div>
+        ${fotoDia(dia)}
         <div class="tracejado"></div>
         <div class="pe">${barra19(i)}<div class="fichas fichas-claras">${fichaTempo(dia)}</div></div>
       </a>
@@ -645,6 +667,7 @@ function telaHoje() {
     ${corpo}
     ${instalado() ? "" : `<a class="linha-lista convite" href="#/mais/instalar"><span class="subapp-icone mini" style="background:#C3122F"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></span><div class="meio"><div class="t">Instale o Indaly como app</div><div class="s">Ícone na tela inicial e sem barra de endereço</div></div><span class="seta">${I.seta}</span></a>`}
   </main>`;
+  carregarFotos();
 }
 
 function barra19(ate) {
@@ -745,6 +768,7 @@ function telaAtividade(iso, n) {
     </div>
     ${a.voo ? cartaoVoo(a) : ""}
     ${a.alerta ? `<div class="aviso aviso-alerta">${I.alerta}<div>${h(a.alerta)}</div></div>` : ""}
+    ${a.avisos?.length ? `<div class="aviso aviso-pendente avisos">${I.pendente}<div><b>Antes de ir</b><ul>${a.avisos.map((t) => `<li>${h(t)}</li>`).join("")}</ul></div></div>` : ""}
     ${a.status === "pendente" ? `<div class="aviso aviso-pendente">${I.pendente}<div><b>Pendência:</b> ${h(a.pendencia || "a resolver")}</div></div>` : ""}
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
@@ -771,11 +795,12 @@ const CATS = [
   { id: "todos", nome: "Todos" },
   { id: "viagem", nome: "Vistos e saúde" },
   { id: "seguro", nome: "Seguro" },
+  { id: "vip", nome: "Salas VIP" },
   { id: "passagem", nome: "Passagens" },
   { id: "hotel", nome: "Hospedagens" },
   { id: "passeio", nome: "Passeios" },
 ];
-const ICONE_CAT = { seguro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>', viagem: I.id, passagem: I.aviao, hotel: I.cama, passeio: I.bilhete };
+const ICONE_CAT = { vip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18v-6a2 2 0 0 1 4 0v2h8v-2a2 2 0 0 1 4 0v6zM6 10V8a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v2M6 18v2M18 18v2"/></svg>', seguro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>', viagem: I.id, passagem: I.aviao, hotel: I.cama, passeio: I.bilhete };
 
 function itemCarteira(c) {
   const tint = c.data ? (PAISES[R.dias.find((d) => d.data === c.data)?.pais] || PAISES.BR).tint : "#E3E6F0";
@@ -915,8 +940,11 @@ const APP = {
   waze: { n: "Waze", dom: "waze.com", pkg: "com.waze", ios: 323229106, url: "https://www.waze.com/" },
   tradutor: { n: "Google Tradutor", dom: "translate.google.com", pkg: "com.google.android.apps.translate", ios: 414706506, url: "https://translate.google.com/" },
 };
+APP.prioritypass = { n: "Priority Pass", dom: "prioritypass.com", pkg: "com.prioritypass3", ios: 406878019, url: "https://www.prioritypass.com/" };
+APP.visaairport = { n: "Visa Airport Companion", dom: "visa.com", pkg: "com.dragonpass.en.latam", ios: 1291608009, url: "https://apps.apple.com/app/id1291608009" };
 const APPS = [
   { grupo: "Dinheiro", itens: [["wise", "Conta global e cartão"], ["nubank", "Conta global"], ["itau", "Banco"], ["splitwise", "Dividir as despesas do grupo"]] },
+  { grupo: "Salas VIP", itens: [["prioritypass", "Cartão digital e lista de salas nos aeroportos"], ["visaairport", "Salas VIP pelo cartão Visa"]] },
   { grupo: "Companhias aéreas", itens: [["ita", "Brasil ⇄ Roma ⇄ Delhi (a antiga Alitalia)"], ["airindia", "Delhi → Kathmandu"], ["buddha", "Kathmandu → Varanasi"], ["indigo", "Varanasi → Delhi"]] },
   { grupo: "Transporte na Índia", itens: [["uber", "Carro e tuk-tuk (Uber Auto)"], ["ola", "Carro e tuk-tuk, muito usado na Índia"], ["rapido", "Moto-táxi, tuk-tuk e carro"]] },
   { grupo: "Transporte no Nepal", itens: [["pathao", "O mais usado em Kathmandu"], ["indrive", "Você propõe o preço da corrida"]] },

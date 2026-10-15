@@ -531,3 +531,24 @@ a.ficha { text-decoration: none; color: inherit; }
 .paginas canvas { max-width: none; height: auto; display: block; }
 .visor-dica { position: absolute; left: 50%; bottom: calc(18px + var(--base)); transform: translateX(-50%); background: rgba(13,22,56,0.85); color: #fff; font-size: 13px; padding: 8px 14px; border-radius: 18px; pointer-events: none; white-space: nowrap; transition: opacity 0.4s; }
 .visor-dica.some { opacity: 0; }
+
+/* aba central Roteiro */
+.abas a.aba-central { position: relative; }
+.aba-circulo { width: 66px; height: 66px; margin-top: -26px; border-radius: 50%; background: var(--tinta); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; box-shadow: 0 0 0 5px var(--branco), 0 6px 16px rgba(20,34,79,0.28); font-size: 11px; font-weight: 700; }
+.abas a.aba-central svg { font-size: 25px; stroke-width: 2; }
+.abas a.aba-central[aria-current="page"] { color: var(--tinta); }
+.abas a.aba-central[aria-current="page"] .aba-circulo { background: var(--tinta); box-shadow: 0 0 0 5px var(--branco), 0 0 0 7.5px var(--acafrao), 0 6px 16px rgba(20,34,79,0.28); }
+
+/* foto do dia na aba Hoje */
+.foto-dia { aspect-ratio: 8 / 3; background: var(--linha-2); overflow: hidden; }
+.foto-dia img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity 0.35s; }
+.foto-dia img.ok { opacity: 1; }
+.bilhete-mini .foto-dia + .tracejado { margin-top: 12px; }
+
+/* avisos amarelos da atividade */
+.avisos b { display: block; margin-bottom: 2px; }
+.avisos ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+
+/* imagens no visor */
+.visor-img { background: #fff; }
+.visor-img.nitida { image-rendering: pixelated; }

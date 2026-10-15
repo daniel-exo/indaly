@@ -12,6 +12,7 @@ O roteiro legível (`roteiro.json`) **não fica neste repositório**. Ele está 
      e/ou em `carteira[].docs`. Na carteira, `ate` define quando o item vai para "Utilizados".
 2. `npm install` (instala `age-encryption`) e rodar:
    `node ferramentas/montar.mjs --roteiro /caminho/roteiro.json --docs "/pasta/com/os/arquivos"`
+   - Fotos do dia (aba Hoje): recortar em 8:3 com `python3 ferramentas/fotos.py` e passar a pasta com `--extra /pasta/fotos-app`.
    - Tranca só os documentos novos ou alterados (nome = hash do conteúdo).
    - Não precisa da senha: usa a chave pública `cofre/destinatario.txt`.
 3. Salvar o `roteiro.json` atualizado de volta no projeto e fazer commit/push aqui.
