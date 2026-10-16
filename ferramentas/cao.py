@@ -3,25 +3,27 @@ import math
 LARANJA, AZUL, BRANCO = "#EE8A24", "#14224F", "#FFFFFF"
 
 def cao(gap=LARANJA, olhos="abertos", guirlanda=True):
-    """Desenho em viewBox 0 0 100 100, sem fundo. olhos: abertos | fechados | ambos (classes p/ CSS) | piscando."""
-    s = (f'<path d="M31 43 L25.5 15 C25.2 13.3 26.8 12.4 28 13.4 L46 28 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
-         f'<path d="M69 43 L74.5 15 C74.8 13.3 73.2 12.4 72 13.4 L54 28 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
-         f'<path d="M33 35 L29.5 20 L40 29 Z" fill="{AZUL}" stroke="{AZUL}" stroke-width="1.5" stroke-linejoin="round"/>'
-         f'<path d="M67 35 L70.5 20 L60 29 Z" fill="{AZUL}" stroke="{AZUL}" stroke-width="1.5" stroke-linejoin="round"/>'
-         f'<path d="M50 25 C65 25 73 36 73 50 C73 63 64 72 50 72 C36 72 27 63 27 50 C27 36 35 25 50 25 Z" fill="{BRANCO}"/>')
-    abertos = f'<g class="olho-aberto"><circle cx="41" cy="47" r="3.2" fill="{AZUL}"/><circle cx="59" cy="47" r="3.2" fill="{AZUL}"/></g>'
-    fechados = (f'<g class="olho-fechado"><path d="M37.2 46.6 Q41 50.4 44.8 46.6" fill="none" stroke="{AZUL}" stroke-width="2.3" stroke-linecap="round"/>'
-                f'<path d="M55.2 46.6 Q59 50.4 62.8 46.6" fill="none" stroke="{AZUL}" stroke-width="2.3" stroke-linecap="round"/></g>')
-    piscando = (f'<circle cx="41" cy="47" r="3.2" fill="{AZUL}"/>'
-                f'<path d="M55.2 46.6 Q59 50.4 62.8 46.6" fill="none" stroke="{AZUL}" stroke-width="2.3" stroke-linecap="round"/>')
-    s += {"abertos": abertos, "fechados": fechados, "ambos": abertos + fechados, "piscando": piscando}[olhos]
-    s += (f'<path d="M44.5 56 H55.5 C55.5 60 52.5 62 50 62 C47.5 62 44.5 60 44.5 56 Z" fill="{AZUL}"/>'
-          f'<path d="M50 62 V65 M50 65 C48.2 67.2 45.6 67.2 44.2 65.4 M50 65 C51.8 67.2 54.4 67.2 55.8 65.4" fill="none" stroke="{AZUL}" stroke-width="1.9" stroke-linecap="round"/>'
-          f'<ellipse cx="50" cy="36" rx="2.7" ry="4.4" fill="{LARANJA}"/>')
+    """Desenho C2 (orelhas dobradas) em viewBox 0 0 100 100, sem fundo.
+    olhos: abertos | fechados | ambos (classes p/ CSS) | piscando."""
+    s = (f'<path d="M29 40 L27 17 C26.8 14.5 29 13.6 30.6 14.8 L47 26 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
+         f'<path d="M27.6 18.5 C27.4 15.6 29.4 14.6 31 15.8 L41.5 23 L33 31 Z" fill="{AZUL}"/>'
+         f'<path d="M71 40 L73 17 C73.2 14.5 71 13.6 69.4 14.8 L53 26 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
+         f'<path d="M72.4 18.5 C72.6 15.6 70.6 14.6 69 15.8 L58.5 23 L67 31 Z" fill="{AZUL}"/>'
+         f'<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="{BRANCO}"/>')
+    aberto = lambda x: f'<circle cx="{x}" cy="45" r="3.4" fill="{AZUL}"/>'
+    fechado = lambda x: f'<path d="M{x-3.8} 44.6 Q{x} 48.4 {x+3.8} 44.6" fill="none" stroke="{AZUL}" stroke-width="2.3" stroke-linecap="round"/>'
+    abertos = f'<g class="olho-aberto">{aberto(40)}{aberto(60)}</g>'
+    fechados = f'<g class="olho-fechado">{fechado(40)}{fechado(60)}</g>'
+    s += {"abertos": abertos, "fechados": fechados, "ambos": abertos + fechados, "piscando": aberto(40) + fechado(60)}[olhos]
+    y = 55
+    s += (f'<path d="M42 {y} C42 {y-2.5} 44 {y-3.5} 50 {y-3.5} C56 {y-3.5} 58 {y-2.5} 58 {y} C58 {y+4} 54 {y+6} 50 {y+6} C46 {y+6} 42 {y+4} 42 {y} Z" fill="{AZUL}"/>'
+          f'<path d="M50 {y+6} V{y+9}" stroke="{AZUL}" stroke-width="2" stroke-linecap="round" fill="none"/>'
+          f'<path d="M42 {y+8} C45 {y+11.5} 48 {y+11} 50 {y+9} C52 {y+11} 55 {y+11.5} 58 {y+8}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>'
+          f'<ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="{LARANJA}"/>')
     for k in range(9 if guirlanda else 0):
         a = math.pi * k / 8
-        x, y = 50 - 24 * math.cos(a), 69 + 17 * math.sin(a)
-        s += f'<circle cx="{x:.2f}" cy="{y:.2f}" r="5" fill="{BRANCO}" stroke="{gap}" stroke-width="1.8"/>'
+        x, yy = 50 - 24 * math.cos(a), 71 + 17 * math.sin(a)
+        s += f'<circle cx="{x:.2f}" cy="{yy:.2f}" r="5" fill="{BRANCO}" stroke="{gap}" stroke-width="1.8"/>'
     return s
 
 def icone(tamanho=None, raio=22, escala=1.0, olhos="abertos"):
