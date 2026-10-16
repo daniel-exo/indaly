@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v23";
+const VERSAO_APP = "v24";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -80,6 +80,8 @@ const PAISES = {
   IN: { nome: "Índia", cor: "#EE8A24", tint: "#FCE7CF", claro: true },
   NP: { nome: "Nepal", cor: "#C3122F", tint: "#F8D3D9" },
 };
+// blocos de data e ícones da carteira: cor cheia do país (texto escuro nas cores claras)
+const corBloco = (p) => `background:${p.cor};color:${p.claro ? "#14224F" : "#FFFFFF"}`;
 const OURO = { nome: "Brasil", cor: "#F2C230", tint: "#FBEFC4", claro: true };
 
 /* o cachorro do Indaly (logo). Desenho gerado por ferramentas/cao.py */
@@ -786,7 +788,7 @@ function telaHoje() {
   $app.innerHTML = `
   <main class="tela">
     <div class="cabeca">
-      <div class="marca">Indaly</div>
+      <div class="marca">${caoSVG(30)}<span>Indaly</span></div>
       <div class="relogios">${tzLocal === "America/Sao_Paulo" ? `<b>${horaEm("America/Sao_Paulo")} São Paulo</b>` : relogios(tzLocal, nomeLocal)}</div>
     </div>
     ${corpo}
@@ -817,7 +819,7 @@ function linhaDia(d, comEstado = true) {
   if (!passou && alerta) lado.push(`<span class="etiqueta et-alerta">${I.alerta} aviso</span>`);
   if (!passou && pend) lado.push(`<span class="etiqueta et-pendente">${pend} pend.</span>`);
   return `<a class="linha-lista dia-linha ${ehHoje ? "hoje" : ""}" href="#/dia/${d.data}" style="${passou ? "opacity:.55" : ""}">
-    <div class="data-bloco" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>
+    <div class="data-bloco" style="${corBloco(p)}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>
     <div class="meio"><div class="t">${h(d.cidade)}${d.subtitulo ? ` <span style="font-weight:400;color:var(--apagado)">${h(d.subtitulo)}</span>` : ""}</div><div class="s">${h(resumo)}</div></div>
     <div class="lado">${lado.join("")}</div>
   </a>`;
@@ -988,14 +990,14 @@ const CATS = [
 const ICONE_CAT = { vip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18v-6a2 2 0 0 1 4 0v2h8v-2a2 2 0 0 1 4 0v6zM6 10V8a3 3 0 0 1 3-3h6a3 3 0 0 1 3 3v2M6 18v2M18 18v2"/></svg>', seguro: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>', viagem: I.id, passagem: I.aviao, hotel: I.cama, passeio: I.bilhete };
 
 function itemCarteira(c) {
-  const tint = c.data ? (PAISES[R.dias.find((d) => d.data === c.data)?.pais] || PAISES.BR).tint : "#E3E6F0";
+  const pc = c.data ? PAISES[R.dias.find((d) => d.data === c.data)?.pais] || PAISES.BR : PAISES.BR;
   const icone = c.titulo.startsWith("Trem") ? I.trem : ICONE_CAT[c.cat];
   const sub = [c.data ? dataMedia(c.data) : "", c.sub].filter(Boolean).join(" · ");
   const unico = c.docs.length === 1;
-  const corpo = `<span class="ic" style="background:${tint}">${icone}</span>
+  const corpo = `<span class="ic" style="${corBloco(pc)}">${icone}</span>
     <span class="meio"><span class="t">${h(c.titulo)}</span><span class="s">${h(sub)}${c.aviso ? ` · <em>${h(c.aviso)}</em>` : ""}</span></span>`;
   if (unico) return `<button type="button" class="cart-item" data-doc="${h(c.docs[0])}">${corpo}<span class="seta">${I.seta}</span></button>`;
-  return `<div class="cart-item">${corpo}<span class="arquivos">${c.docs.map((id) => `<button type="button" data-doc="${h(id)}">${h(rotuloArquivo(R.docs[id].nome))}</button>`).join("")}</span></div>`;
+  return `<div class="cart-item varios">${corpo}<span class="arquivos">${c.docs.map((id) => `<button type="button" data-doc="${h(id)}">${h(rotuloArquivo(R.docs[id].nome))}</button>`).join("")}</span></div>`;
 }
 
 function telaCarteira() {
@@ -1274,7 +1276,7 @@ function telaTempo() {
   const previsao = futuros.map((d) => {
     const t = tempoDoDia(d);
     const p = corDia(d);
-    const bloco = `<div class="data-bloco-mini" style="background:${p.tint}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>`;
+    const bloco = `<div class="data-bloco-mini" style="${corBloco(p)}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>`;
     const sol = textoSol(d);
     const linhaSol = sol ? `<div class="s sol-linha">${SOL_ICONES.nasce}sol nasce ${sol.nasce} · se põe ${sol.poe}</div>` : "";
     if (!t) {

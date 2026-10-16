@@ -205,7 +205,7 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 .capitulo b { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; }
 .capitulo span { font-size: 12px; color: var(--apagado); }
 .dia-linha .data-bloco { width: 48px; height: 44px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
-.dia-linha .data-bloco small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--apagado); }
+.dia-linha .data-bloco small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: inherit; opacity: 0.78; }
 .dia-linha .data-bloco b { font-family: var(--mono); font-size: 17px; }
 .dia-linha.hoje { box-shadow: inset 0 0 0 2px var(--tinta); }
 .dia-linha .lado { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
@@ -297,7 +297,7 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 .hosp-botoes { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 .hosp-botoes .botao-contorno { color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--linha); background: var(--cartao); }
 .data-bloco-mini { width: 42px; height: 40px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
-.data-bloco-mini small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: var(--apagado); }
+.data-bloco-mini small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: inherit; opacity: 0.78; }
 .data-bloco-mini b { font-family: var(--mono); font-size: 15px; }
 .tempo-dia { display: flex; align-items: center; gap: 6px; white-space: nowrap; }
 .tempo-dia svg { font-size: 24px; color: var(--tinta); }
@@ -645,8 +645,7 @@ a.ficha { text-decoration: none; color: inherit; }
 }
 
 /* blocos com fundo de cor clara fixa (datas, ícones da carteira) mantêm texto escuro */
-.data-bloco, .data-bloco-mini, .cart-item .ic { color: var(--tinta-fixo); }
-.data-bloco small, .data-bloco-mini small { color: #565D78; }
+.data-bloco small, .data-bloco-mini small { color: inherit; opacity: 0.78; }
 /* escolha de tema */
 .temas { display: flex; flex-direction: column; gap: 6px; }
 .temas button { display: flex; align-items: center; gap: 12px; min-height: 56px; border: 0; border-radius: 14px; background: var(--cartao); color: var(--tinta); padding: 10px 14px; text-align: left; cursor: pointer; font: inherit; }
@@ -697,7 +696,17 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .mais-dedicatoria { margin: 36px 8px 8px; text-align: center; font-size: 14px; line-height: 1.5; color: var(--texto-2); }
 
 /* foto do dia como rodapé da página do roteiro */
-.rodape-dia { position: relative; margin-top: 28px; }
+.rodape-dia { position: relative; margin-top: 28px; margin-bottom: -29px; } /* encosta na barra de baixo (96px de folga do #app − 67px da barra) */
 .rodape-dia .foto-dia { aspect-ratio: 8 / 3; }
 .rodape-dia::before { content: ""; position: absolute; inset: 0 0 auto; height: 45%; z-index: 1; background: linear-gradient(var(--papel), transparent); pointer-events: none; }
 .rodape-dia span { position: absolute; left: 20px; bottom: 12px; z-index: 1; color: #fff; font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; text-shadow: 0 1px 6px rgba(0,0,0,0.55); }
+
+/* carteira: itens com mais de um arquivo ganham uma segunda linha com botões inteiros */
+.lista-densa .cart-item.varios { flex-wrap: wrap; row-gap: 8px; padding-bottom: 10px; cursor: default; }
+.lista-densa .cart-item.varios .meio { flex: 1 1 calc(100% - 50px); }
+.lista-densa .cart-item.varios .arquivos { flex: 1 1 100%; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; padding-left: 44px; }
+.lista-densa .cart-item.varios .arquivos button { min-height: 36px; font-size: 12px; padding: 0 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* cachorro ao lado do nome no topo da aba Hoje */
+.cabeca .marca { display: flex; align-items: center; gap: 8px; width: auto; height: auto; background: none; border-radius: 0; color: var(--tinta); cursor: default; font-size: 24px; }
+.cabeca .marca .cao { border-radius: 8px; }
