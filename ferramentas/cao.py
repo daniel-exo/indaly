@@ -1,15 +1,30 @@
-"""O cachorro do Indaly (logo K1b). Gera o SVG usado no app e os ícones PNG."""
+"""O cachorro do Indaly (logo F1: rosto C2 com orelhas caídas). Gera o SVG usado no app e os ícones PNG."""
 import math
 LARANJA, AZUL, BRANCO = "#EE8A24", "#14224F", "#FFFFFF"
 
+ORELHA = ("M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 "
+          "C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 "
+          "C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z")
+
+def _espelha(d):
+    import re
+    out, n = [], 0
+    for t in re.findall(r"[A-Za-z]|-?\d*\.?\d+", d):
+        if t.isalpha():
+            out.append(t); n = 0
+        else:
+            v = float(t); out.append(f"{(100 - v) if n % 2 == 0 else v:g}"); n += 1
+    return " ".join(out)
+
+ORELHA_ESQ = _espelha(ORELHA)
+
 def cao(gap=LARANJA, olhos="abertos", guirlanda=True):
-    """Desenho C2 (orelhas dobradas) em viewBox 0 0 100 100, sem fundo.
+    """Desenho F1 (orelhas caídas) em viewBox 0 0 100 100, sem fundo.
     olhos: abertos | fechados | ambos (classes p/ CSS) | piscando."""
-    s = (f'<path d="M29 40 L27 17 C26.8 14.5 29 13.6 30.6 14.8 L47 26 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
-         f'<path d="M27.6 18.5 C27.4 15.6 29.4 14.6 31 15.8 L41.5 23 L33 31 Z" fill="{AZUL}"/>'
-         f'<path d="M71 40 L73 17 C73.2 14.5 71 13.6 69.4 14.8 L53 26 Z" fill="{BRANCO}" stroke="{BRANCO}" stroke-width="2" stroke-linejoin="round"/>'
-         f'<path d="M72.4 18.5 C72.6 15.6 70.6 14.6 69 15.8 L58.5 23 L67 31 Z" fill="{AZUL}"/>'
-         f'<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="{BRANCO}"/>')
+    # cabeça + orelhas caídas (F1): aba curta presa no alto da cabeça, que cai até a altura dos olhos;
+    # o contorno na cor do fundo (gap) separa a orelha branca da cabeça
+    s = (f'<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="{BRANCO}"/>'
+         + "".join(f'<path d="{d}" fill="{BRANCO}" stroke="{gap}" stroke-width="2" stroke-linejoin="round"/>' for d in (ORELHA, ORELHA_ESQ)))
     aberto = lambda x: f'<circle cx="{x}" cy="45" r="3.4" fill="{AZUL}"/>'
     fechado = lambda x: f'<path d="M{x-3.8} 44.6 Q{x} 48.4 {x+3.8} 44.6" fill="none" stroke="{AZUL}" stroke-width="2.3" stroke-linecap="round"/>'
     abertos = f'<g class="olho-aberto">{aberto(40)}{aberto(60)}</g>'
@@ -45,4 +60,4 @@ if __name__ == "__main__":
     }
     json.dump({k: [v[0], v[1]] for k, v in arq.items()}, open(out, "w"))
     print(json.dumps({"cao": cao(), "ambos": cao(olhos="ambos"), "frase": cao(gap=AZUL),
-                      "semGuirlanda": cao(guirlanda=False), "fuso": cao(gap="#0D7A48", olhos="piscando")}))
+                      "semGuirlanda": cao(gap="#C3122F", guirlanda=False), "fuso": cao(gap="#0D7A48", olhos="piscando")}))
