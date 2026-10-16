@@ -1,3 +1,4 @@
 node_modules/
 *.json.bak
 package-lock.json
+__pycache__/
