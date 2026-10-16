@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v24";
+const VERSAO_APP = "v26";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -48,6 +48,7 @@ const I = {
   pendente: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.5v.01"/></svg>',
   ok: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
   tel: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  motorista: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M7 10h10M7 14h6"/></svg>',
   externo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>',
 };
 
@@ -89,6 +90,7 @@ const CAO = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 
 const CAO_OLHOS = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="#FFFFFF"/><path d="M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z" fill="#FFFFFF" stroke="#EE8A24" stroke-width="2" stroke-linejoin="round"/><path d="M 38 23 C 36.5 21 33 20.5 29.5 21 C 24 21.8 18.5 25 15.5 28.5 C 13.5 31 13.6 35 15 38 C 16.5 41 18.2 43 18.4 46 C 18.5 48 19.2 49.6 20.4 49.6 C 21.4 49.6 22.6 48.5 23.4 46.5 C 25.4 43 27.8 39.5 28.6 35.5 C 29.2 32.5 29.8 29.6 31.4 27.8 C 33.2 25.6 35.8 24.2 38 23 Z" fill="#FFFFFF" stroke="#EE8A24" stroke-width="2" stroke-linejoin="round"/><g class="olho-aberto"><circle cx="40" cy="45" r="3.4" fill="#14224F"/><circle cx="60" cy="45" r="3.4" fill="#14224F"/></g><g class="olho-fechado"><path d="M36.2 44.6 Q40 48.4 43.8 44.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/><path d="M56.2 44.6 Q60 48.4 63.8 44.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/></g><path d="M42 55 C42 52.5 44 51.5 50 51.5 C56 51.5 58 52.5 58 55 C58 59 54 61 50 61 C46 61 42 59 42 55 Z" fill="#14224F"/><path d="M50 61 V64" stroke="#14224F" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M42 63 C45 66.5 48 66 50 64 C52 66 55 66.5 58 63" fill="none" stroke="#14224F" stroke-width="2" stroke-linecap="round"/><ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="27.83" cy="77.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="33.03" cy="83.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="40.82" cy="86.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="50.00" cy="88.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="59.18" cy="86.71" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="66.97" cy="83.02" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="72.17" cy="77.51" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/><circle cx="74.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#EE8A24" stroke-width="1.8"/>';
 const CAO_FRASE = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="#FFFFFF"/><path d="M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z" fill="#FFFFFF" stroke="#14224F" stroke-width="2" stroke-linejoin="round"/><path d="M 38 23 C 36.5 21 33 20.5 29.5 21 C 24 21.8 18.5 25 15.5 28.5 C 13.5 31 13.6 35 15 38 C 16.5 41 18.2 43 18.4 46 C 18.5 48 19.2 49.6 20.4 49.6 C 21.4 49.6 22.6 48.5 23.4 46.5 C 25.4 43 27.8 39.5 28.6 35.5 C 29.2 32.5 29.8 29.6 31.4 27.8 C 33.2 25.6 35.8 24.2 38 23 Z" fill="#FFFFFF" stroke="#14224F" stroke-width="2" stroke-linejoin="round"/><g class="olho-aberto"><circle cx="40" cy="45" r="3.4" fill="#14224F"/><circle cx="60" cy="45" r="3.4" fill="#14224F"/></g><path d="M42 55 C42 52.5 44 51.5 50 51.5 C56 51.5 58 52.5 58 55 C58 59 54 61 50 61 C46 61 42 59 42 55 Z" fill="#14224F"/><path d="M50 61 V64" stroke="#14224F" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M42 63 C45 66.5 48 66 50 64 C52 66 55 66.5 58 63" fill="none" stroke="#14224F" stroke-width="2" stroke-linecap="round"/><ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="27.83" cy="77.51" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="33.03" cy="83.02" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="40.82" cy="86.71" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="50.00" cy="88.00" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="59.18" cy="86.71" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="66.97" cy="83.02" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="72.17" cy="77.51" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/><circle cx="74.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#14224F" stroke-width="1.8"/>';
 const CAO_SEM_GUIRLANDA = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="#FFFFFF"/><path d="M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z" fill="#FFFFFF" stroke="#C3122F" stroke-width="2" stroke-linejoin="round"/><path d="M 38 23 C 36.5 21 33 20.5 29.5 21 C 24 21.8 18.5 25 15.5 28.5 C 13.5 31 13.6 35 15 38 C 16.5 41 18.2 43 18.4 46 C 18.5 48 19.2 49.6 20.4 49.6 C 21.4 49.6 22.6 48.5 23.4 46.5 C 25.4 43 27.8 39.5 28.6 35.5 C 29.2 32.5 29.8 29.6 31.4 27.8 C 33.2 25.6 35.8 24.2 38 23 Z" fill="#FFFFFF" stroke="#C3122F" stroke-width="2" stroke-linejoin="round"/><g class="olho-aberto"><circle cx="40" cy="45" r="3.4" fill="#14224F"/><circle cx="60" cy="45" r="3.4" fill="#14224F"/></g><path d="M42 55 C42 52.5 44 51.5 50 51.5 C56 51.5 58 52.5 58 55 C58 59 54 61 50 61 C46 61 42 59 42 55 Z" fill="#14224F"/><path d="M50 61 V64" stroke="#14224F" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M42 63 C45 66.5 48 66 50 64 C52 66 55 66.5 58 63" fill="none" stroke="#14224F" stroke-width="2" stroke-linecap="round"/><ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="#EE8A24"/>';
+const CAO_COMIDA = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="#FFFFFF"/><path d="M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z" fill="#FFFFFF" stroke="#D6457A" stroke-width="2" stroke-linejoin="round"/><path d="M 38 23 C 36.5 21 33 20.5 29.5 21 C 24 21.8 18.5 25 15.5 28.5 C 13.5 31 13.6 35 15 38 C 16.5 41 18.2 43 18.4 46 C 18.5 48 19.2 49.6 20.4 49.6 C 21.4 49.6 22.6 48.5 23.4 46.5 C 25.4 43 27.8 39.5 28.6 35.5 C 29.2 32.5 29.8 29.6 31.4 27.8 C 33.2 25.6 35.8 24.2 38 23 Z" fill="#FFFFFF" stroke="#D6457A" stroke-width="2" stroke-linejoin="round"/><g class="olho-fechado"><path d="M36.2 44.6 Q40 48.4 43.8 44.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/><path d="M56.2 44.6 Q60 48.4 63.8 44.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/></g><path d="M42 55 C42 52.5 44 51.5 50 51.5 C56 51.5 58 52.5 58 55 C58 59 54 61 50 61 C46 61 42 59 42 55 Z" fill="#14224F"/><g transform="rotate(-108 55.5 64.5)"><path d="M52 63.5 L59 63.5 L59 69 C59 74 52 74 52 69 Z" fill="#E8506A"/><path d="M55.5 65.5 V70" stroke="#B8324A" stroke-width="1.1" stroke-linecap="round"/></g><path d="M50 61 V64" stroke="#14224F" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M42 63 C45 66.5 48 66 50 64 C52 66 55 66.5 58 63" fill="none" stroke="#14224F" stroke-width="2" stroke-linecap="round"/><ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="27.83" cy="77.51" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="33.03" cy="83.02" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="40.82" cy="86.71" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="50.00" cy="88.00" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="59.18" cy="86.71" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="66.97" cy="83.02" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="72.17" cy="77.51" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/><circle cx="74.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#D6457A" stroke-width="1.8"/>';
 const CAO_FUSO = '<path d="M50 22 C66 22 75 32 75 46 C75 54 72 60 67 64 C63 70 57 74 50 74 C43 74 37 70 33 64 C28 60 25 54 25 46 C25 32 34 22 50 22 Z" fill="#FFFFFF"/><path d="M62 23 C63.5 21 67 20.5 70.5 21 C76 21.8 81.5 25 84.5 28.5 C86.5 31 86.4 35 85 38 C83.5 41 81.8 43 81.6 46 C81.5 48 80.8 49.6 79.6 49.6 C78.6 49.6 77.4 48.5 76.6 46.5 C74.6 43 72.2 39.5 71.4 35.5 C70.8 32.5 70.2 29.6 68.6 27.8 C66.8 25.6 64.2 24.2 62 23 Z" fill="#FFFFFF" stroke="#0D7A48" stroke-width="2" stroke-linejoin="round"/><path d="M 38 23 C 36.5 21 33 20.5 29.5 21 C 24 21.8 18.5 25 15.5 28.5 C 13.5 31 13.6 35 15 38 C 16.5 41 18.2 43 18.4 46 C 18.5 48 19.2 49.6 20.4 49.6 C 21.4 49.6 22.6 48.5 23.4 46.5 C 25.4 43 27.8 39.5 28.6 35.5 C 29.2 32.5 29.8 29.6 31.4 27.8 C 33.2 25.6 35.8 24.2 38 23 Z" fill="#FFFFFF" stroke="#0D7A48" stroke-width="2" stroke-linejoin="round"/><circle cx="40" cy="45" r="3.4" fill="#14224F"/><path d="M56.2 44.6 Q60 48.4 63.8 44.6" fill="none" stroke="#14224F" stroke-width="2.3" stroke-linecap="round"/><path d="M42 55 C42 52.5 44 51.5 50 51.5 C56 51.5 58 52.5 58 55 C58 59 54 61 50 61 C46 61 42 59 42 55 Z" fill="#14224F"/><path d="M50 61 V64" stroke="#14224F" stroke-width="2" stroke-linecap="round" fill="none"/><path d="M42 63 C45 66.5 48 66 50 64 C52 66 55 66.5 58 63" fill="none" stroke="#14224F" stroke-width="2" stroke-linecap="round"/><ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="#EE8A24"/><circle cx="26.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="27.83" cy="77.51" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="33.03" cy="83.02" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="40.82" cy="86.71" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="50.00" cy="88.00" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="59.18" cy="86.71" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="66.97" cy="83.02" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="72.17" cy="77.51" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/><circle cx="74.00" cy="71.00" r="5" fill="#FFFFFF" stroke="#0D7A48" stroke-width="1.8"/>';
 function caoSVG(tam, { fundo = true, olhos = "abertos", classe = "", rotulo = "" } = {}) {
   const corpo = olhos === "ambos" ? CAO_OLHOS : CAO;
@@ -533,6 +535,7 @@ function cartaoHospedagem(hosp, dia) {
   const botoes = [];
   if (hosp.docs?.length) botoes.push(`<button type="button" class="botao botao-papel" data-doc="${h(hosp.docs[0])}">${I.bilhete} Reserva</button>`);
   if (!aviao && hosp.endereco && hosp.endereco !== "Casa") botoes.push(`<button type="button" class="botao botao-contorno" data-ir="${dia.data}|h">${I.carro} Ir até lá</button>`);
+  if (hosp.motorista) botoes.push(`<a class="botao botao-contorno" href="#/motorista/${dia.data}/h">${I.motorista} Motorista</a>`);
   if (hosp.tel) botoes.push(`<a class="botao botao-contorno" href="tel:${h(hosp.tel.replace(/\s/g, ""))}">${I.tel} Ligar</a>`);
   return `
   <section class="hospedagem-bloco" aria-label="Onde dormir">
@@ -960,12 +963,50 @@ function telaAtividade(iso, n) {
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
       ${a.coords || a.mapa || a.endereco || a.local ? `<button type="button" class="botao botao-tinta" data-ir="${dia.data}|${n}">${I.carro} Ir até lá</button>` : ""}
+      ${a.motorista ? `<a class="botao botao-claro" href="#/motorista/${dia.data}/${n}">${I.motorista} Motorista</a>` : ""}
       ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${a.docs.length > 1 ? "Documentos" : h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
     </div>
     ${a.docs?.length ? `<div class="rotulo">Documentos</div><div class="lista">${a.docs.map((id) => linhaDoc(id)).join("")}</div>` : ""}
     ${a.notas ? `<div class="aviso aviso-pendente" style="background:var(--cartao);color:var(--tinta)"><div><b>Notas</b> · ${h(a.notas)}</div></div>` : ""}
   </main>`;
   window.scrollTo(0, 0);
+}
+
+/* cartão em tela cheia para mostrar ao motorista: nome e endereço na escrita local e em inglês */
+const FRASE_MOTORISTA = {
+  hi: ["कृपया मुझे यहाँ ले चलिए", "Please take me here"],
+  ne: ["कृपया मलाई यहाँ लैजानुहोस्", "Please take me here"],
+  it: ["Mi porti qui, per favore", "Por favor, me leve até aqui"],
+};
+function telaMotorista(iso, n) {
+  const dia = R.dias[idxDia(iso)];
+  const alvo = n === "h" ? dia?.hospedagem : dia?.atividades[Number(n)];
+  const m = alvo?.motorista;
+  if (!m) return (location.hash = "#/dia/" + iso);
+  const [frase, fraseEn] = FRASE_MOTORISTA[m.lingua] || FRASE_MOTORISTA.hi;
+  const pais = corDia(dia);
+  const local = m.lingua === "it";
+  $app.innerHTML = `
+  <main class="motorista" lang="${m.lingua}" style="--pais:${pais.cor};--pais-txt:${pais.claro ? "#14224F" : "#fff"}">
+    <div class="motorista-topo">
+      <span>${local ? "Mostre ao taxista" : "Mostre ao motorista"}</span>
+      <button type="button" class="motorista-fechar" id="motorista-fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="motorista-frase"><b>${h(frase)}</b>${local ? "" : `<span lang="en">${h(fraseEn)}</span>`}</div>
+    <div class="motorista-corpo">
+      ${local ? `<div class="motorista-nome" lang="it">${h(m.nome)}</div><div class="motorista-area" lang="it">${h(m.area)}</div>` : `
+      <div class="motorista-nome">${h(m.nomeLocal)}</div>
+      <div class="motorista-area">${h(m.areaLocal)}</div>
+      <hr>
+      <div class="motorista-nome en" lang="en">${h(m.nome)}</div>
+      <div class="motorista-area en" lang="en">${h(m.area)}</div>`}
+    </div>
+    ${alvo.tel ? `<a class="botao motorista-tel" href="tel:${h(alvo.tel.replace(/\s/g, ""))}">${I.tel} ${h(alvo.tel)}</a>` : ""}
+  </main>`;
+  document.getElementById("motorista-fechar").addEventListener("click", () => {
+    if (history.length > 1) history.back();
+    else location.hash = n === "h" ? "#/dia/" + iso : `#/dia/${iso}/${n}`;
+  });
 }
 
 function linhaDoc(id) {
@@ -1240,6 +1281,9 @@ const SUBAPPS = [
   { id: "frases", nome: "Frases", cor: "#14224F", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-10 14) scale(0.88)">${CAO_FRASE}</g><path d="M70 5 H90 A6 6 0 0 1 96 11 V26 A6 6 0 0 1 90 32 H80 L71 39 L73 32 H70 A6 6 0 0 1 64 26 V11 A6 6 0 0 1 70 5 Z" fill="#FFFFFF"></path><circle cx="71.5" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="80" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="88.5" cy="18.5" r="2.6" fill="#14224F"></circle></svg>`, tela: () => telaFrases() },
   { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-6 7) scale(0.95)">${CAO}</g><circle cx="84" cy="15" r="8.5" fill="#FFFFFF"></circle><g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"><path d="M84.0 3.0 L84.0 -0.5"></path><path d="M92.5 6.5 L95.0 4.0"></path><path d="M96.0 15.0 L99.5 15.0"></path><path d="M92.5 23.5 L95.0 26.0"></path><path d="M84.0 27.0 L84.0 30.5"></path><path d="M75.5 6.5 L73.0 4.0"></path></g></svg>`, tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
+  { id: "comida", nome: "Comida", cor: "#D6457A", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_COMIDA}</g></svg>`, tela: (b) => telaComida(b && decodeURIComponent(b)) },
+  { id: "deuses", nome: "Deuses e símbolos", cor: "#8C1D40", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19c-3-3-3-8 0-12 3 4 3 9 0 12zM12 19c-4.2-.4-7-3.6-7.4-8 3.6.6 6 3.4 7.4 8zM12 19c4.2-.4 7-3.6 7.4-8-3.6.6-6 3.4-7.4 8zM5 21.5c4-1.2 10-1.2 14 0"/></svg>', tela: (b) => telaDeuses(b) },
+  { id: "gorjetas", nome: "Gorjetas e preços", cor: "#5B3F8C", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7M3 11v4c0 1.4 2.7 2.5 6 2.5 1 0 1.9-.1 2.7-.3"/><circle cx="17" cy="16" r="4.5"/><path d="M17 14v4M15.6 15.2h2.2a.8.8 0 0 1 0 1.6h-1.6a.8.8 0 0 0 0 1.6h2.2"/></svg>', tela: (b) => telaGorjetas(b) },
   { id: "apps", nome: "Apps úteis", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_FUSO}</g></svg>`, tela: () => telaFusos() },
   { id: "compras", nome: "Compras", cor: "#C25E0A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>', tela: () => telaCompras() },
@@ -1454,6 +1498,173 @@ function telaCompras() {
           </div>
         </details>`).join("")}</div>`).join("")}
   </main>`;
+}
+
+/* ---------- guias: gorjetas e preços, comida, deuses e símbolos (guias.json, conteúdo público) ---------- */
+let GUIAS = null;
+function comGuias(titulo, desenhar) {
+  if (GUIAS) return desenhar();
+  $app.innerHTML = `<main class="tela">${topoSubapp(titulo)}<div class="carregando">Abrindo…</div></main>`;
+  const rota = location.hash;
+  fetch("guias.json").then((r) => { if (!r.ok) throw 0; return r.json(); })
+    .then((j) => { GUIAS = j; if (location.hash === rota) rotear(); })
+    .catch(() => { if (location.hash === rota) $app.querySelector(".carregando").textContent = "Não consegui abrir o guia. Conecte uma vez à internet."; });
+}
+const paisDeHoje = () => R.dias[idxDia(hojeISO())]?.pais;
+function abasGuia(itens, atual, base) {
+  return `<div class="filtros guia-abas" role="tablist">${itens.map(([id, nome]) => `<a role="tab" href="${base}/${id}" aria-selected="${id === atual}" class="${id === atual ? "on" : ""}">${h(nome)}</a>`).join("")}</div>`;
+}
+
+/* gorjetas e preços */
+const SIMBOLO_MOEDA = { INR: "₹", NPR: "रू", EUR: "€" };
+function precoTexto(v, m) {
+  const casas = m === "EUR" && v % 1 ? 2 : 0;
+  return `${SIMBOLO_MOEDA[m]} ${fmt(v, casas)}`;
+}
+function emReais(min, max, m) {
+  const t = CAMBIO?.reais_por_unidade?.[m];
+  if (!t) return "";
+  const r = (v) => (v * t < 10 ? fmt(v * t, 2) : fmt(Math.round(v * t), 0));
+  return min === max ? `≈ R$ ${r(min)}` : `≈ R$ ${r(min)}–${r(max)}`;
+}
+function telaGorjetas(sel) {
+  comGuias("Gorjetas e preços", () => {
+    const G = GUIAS.gorjetas;
+    const p = G.find((x) => x.pais === sel) || G.find((x) => x.pais === paisDeHoje()) || G[0];
+    $app.innerHTML = `<main class="tela">${topoSubapp("Gorjetas e preços")}
+      ${abasGuia(G.map((x) => [x.pais, x.nome]), p.pais, "#/mais/gorjetas")}
+      <div class="guia-regras" style="--pais:${PAISES[p.pais].cor}">${p.regras.map((t) => `<p>${h(t)}</p>`).join("")}</div>
+      <div class="rotulo">Gorjetas</div>
+      <div class="lista-densa guia-linhas">${p.gorjetas.map((g) => `<div class="guia-lin"><b>${h(g.n)}</b><span>${h(g.v)}</span></div>`).join("")}</div>
+      <div class="rotulo">Preços de referência</div>
+      <div class="lista-densa guia-linhas">${p.precos.map((x) => `
+        <div class="guia-preco"><div class="meio"><b>${h(x.n)}</b>${x.obs ? `<span>${h(x.obs)}</span>` : ""}</div>
+          <div class="valor"><b>${x.min === x.max ? precoTexto(x.min, p.moeda) : `${precoTexto(x.min, p.moeda)}–${fmt(x.max, p.moeda === "EUR" && x.max % 1 ? 2 : 0)}`}</b><span>${emReais(x.min, x.max, p.moeda)}</span></div></div>`).join("")}</div>
+      <div class="nota">Valores aproximados, de guias de viagem de 2025 e 2026: servem para saber se o preço está justo, não como tabela. Reais pela taxa do Câmbio.</div>
+    </main>`;
+  });
+}
+
+/* comida */
+const PIMENTA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 4c-1 0-1.6.8-1.8 1.6C9 6.5 5 11 4 18c-.2 1.4 1 2.3 2.2 1.6C12 16.5 17 12.5 18 7.5c.8-.3 1.4-1 1.2-2" fill="currentColor" stroke="none"/></svg>';
+const nivelPimenta = (n) => (n ? `<span class="pimentas" aria-label="Picância ${n} de 3">${PIMENTA.repeat(n)}</span>` : `<span class="pimentas zero">sem pimenta</span>`);
+function telaComida(sel) {
+  comGuias("Comida", () => {
+    const C = GUIAS.comida;
+    const hoje = R.dias[idxDia(hojeISO())];
+    const c = C.cidades.find((x) => x.cidade === sel) || C.cidades.find((x) => hoje && (x.cidade === hoje.cidade || (x.cidade === "Roma" && hoje.pais === "IT"))) || C.cidades[0];
+    const pedir = C.pedir.find((x) => x.pais === c.pais);
+    $app.innerHTML = `<main class="tela">${topoSubapp("Comida")}
+      ${abasGuia(C.cidades.map((x) => [x.cidade, x.cidade]), c.cidade, "#/mais/comida")}
+      <p class="texto">${h(c.texto)}</p>
+      ${pedir ? `<div class="guia-pedir" style="--pais:${PAISES[c.pais].cor};color:${PAISES[c.pais].claro ? "#14224F" : "#FFFFFF"}"><span>Para pedir ${h(pedir.pt)}</span><b lang="${c.pais === "NP" ? "ne" : "hi"}">${h(pedir.local)}</b><i>${h(pedir.lido)}</i></div>` : ""}
+      <div class="pratos">${c.pratos.map((p) => `
+        <article class="prato">
+          <div class="prato-topo"><span class="marca-veg ${p.v ? "veg" : "nveg"}" title="${p.v ? "Vegetariano" : "Com carne ou peixe"}"><i></i></span>
+            <div class="meio"><h3>${h(p.n)}</h3>${p.l && p.l !== p.n ? `<span class="prato-local">${h(p.l)}</span>` : ""}</div>${nivelPimenta(p.p)}</div>
+          <p>${h(p.o)}</p>
+        </article>`).join("")}</div>
+      ${c.pais !== "IT" ? `<details class="compra guia-cuidados"><summary><span class="meio"><span class="t">Comer sem susto</span><span class="s">Água, gelo e comida de rua</span></span><span class="seta">${I.seta}</span></summary>
+        <div class="compra-corpo"><ul>${C.cuidados.map((t) => `<li>${h(t)}</li>`).join("")}</ul></div></details>` : ""}
+      <div class="nota"><span class="marca-veg veg"><i></i></span> vegetariano · <span class="marca-veg nveg"><i></i></span> com carne, peixe ou ovo. Na Índia, os produtos e cardápios usam essa mesma marca.</div>
+    </main>`;
+  });
+}
+
+/* deuses e símbolos */
+function ondeVer(ver) {
+  const achados = [];
+  for (const v of ver || []) {
+    const q = v.busca.toLowerCase();
+    for (const d of R.dias) {
+      const n = d.atividades.findIndex((a) => [a.titulo, a.mapa, a.local].some((t) => t && t.toLowerCase().includes(q)));
+      if (n >= 0) { achados.push({ d, n, o: v.o, t: d.atividades[n].titulo }); break; }
+      if (d.nota && d.nota.toLowerCase().includes(q)) { achados.push({ d, n: -1, o: v.o, t: d.cidade }); break; }
+    }
+  }
+  const vistos = new Set();
+  return achados.filter((x) => { const k = x.d.data + x.n; if (vistos.has(k)) return false; vistos.add(k); return true; });
+}
+const emblema = (x, tam = 56) => `<span class="emblema" style="background:${x.cor};width:${tam}px;height:${tam}px"><svg viewBox="0 0 64 64" aria-hidden="true">${x.svg}</svg></span>`;
+function telaDeuses(sub) {
+  comGuias("Deuses e símbolos", () => {
+    if (sub === "quiz") return telaQuiz();
+    const item = sub && (GUIAS.deuses.find((x) => x.id === sub) || GUIAS.simbolos.find((x) => "s-" + x.id === sub));
+    if (item) return telaDeus(item, GUIAS.deuses.includes(item));
+    const aba = sub === "simbolos" ? "simbolos" : "deuses";
+    const lista = GUIAS[aba];
+    const pref = aba === "simbolos" ? "s-" : "";
+    $app.innerHTML = `<main class="tela">${topoSubapp("Deuses e símbolos")}
+      <p class="texto">Para reconhecer quem é quem nos templos, nas ruas e nas festas.</p>
+      ${abasGuia([["deuses", "Deuses"], ["simbolos", "Símbolos"], ["quiz", "Quem é?"]], aba, "#/mais/deuses")}
+      <div class="deuses-grade">${lista.map((x) => {
+        const onde = ondeVer(x.ver);
+        return `<a class="deus-cartao" href="#/mais/deuses/${pref}${x.id}">
+          ${emblema(x, 64)}
+          <span class="deus-nome">${h(x.n)}</span>
+          <span class="deus-local">${h(x.l)}</span>
+          ${x.papel ? `<span class="deus-papel">${h(x.papel)}</span>` : ""}
+          ${onde.length ? `<span class="deus-onde">${I.pino} ${h(onde.map((o) => o.d.cidade).filter((c, i, a) => a.indexOf(c) === i).join(" · "))}</span>` : ""}
+        </a>`;
+      }).join("")}</div>
+    </main>`;
+  });
+}
+function telaDeus(x, ehDeus) {
+  const lista = ehDeus ? GUIAS.deuses : GUIAS.simbolos;
+  const i = lista.indexOf(x);
+  const pref = ehDeus ? "" : "s-";
+  const ant = lista[(i - 1 + lista.length) % lista.length], prox = lista[(i + 1) % lista.length];
+  const onde = ondeVer(x.ver);
+  $app.innerHTML = `<main class="tela">
+    <a class="voltar" href="#/mais/deuses/${ehDeus ? "deuses" : "simbolos"}">${I.voltar} ${ehDeus ? "Deuses" : "Símbolos"}</a>
+    <div class="deus-hero" style="--cor:${x.cor}">
+      ${emblema(x, 132)}
+      <div><h1 class="titulo-tela">${h(x.n)}</h1><div class="deus-local grande">${h(x.l)}</div>${x.papel ? `<div class="deus-papel">${h(x.papel)}</div>` : ""}</div>
+    </div>
+    ${x.reconhecer ? `<div class="rotulo">Como reconhecer</div><ul class="deus-lista">${x.reconhecer.map((t) => `<li>${h(t)}</li>`).join("")}</ul>` : ""}
+    <p class="texto deus-texto">${h(x.texto)}</p>
+    ${onde.length ? `<div class="rotulo">Onde vocês vão ver</div><div class="lista-densa">${onde.map((o) => `
+      <a class="cart-item" href="#/dia/${o.d.data}${o.n >= 0 ? "/" + o.n : ""}">
+        <span class="ic" style="${corBloco(corDia(o.d))}">${I.pino}</span>
+        <span class="meio"><span class="t">${h(o.t)}</span><span class="s">${h(diaCurto(o.d.data))} · ${h(o.d.cidade)}${o.o ? " · " + h(o.o) : ""}</span></span>
+        <span class="seta">${I.seta}</span></a>`).join("")}</div>` : ""}
+    <div class="deus-nav">
+      <a class="botao botao-claro" href="#/mais/deuses/${pref}${ant.id}">${I.voltar} ${h(ant.n)}</a>
+      <a class="botao botao-claro" href="#/mais/deuses/${pref}${prox.id}">${h(prox.n)} ${I.seta}</a>
+    </div>
+  </main>`;
+}
+let QUIZ = { feitos: 0, acertos: 0, atual: null, resposta: null };
+function novaPergunta() {
+  const ids = Object.keys(GUIAS.quiz);
+  let id;
+  do { id = ids[Math.floor(Math.random() * ids.length)]; } while (ids.length > 1 && id === QUIZ.atual?.id);
+  const certo = GUIAS.deuses.find((x) => x.id === id);
+  const outros = ids.filter((k) => k !== id).sort(() => Math.random() - 0.5).slice(0, 3);
+  QUIZ.atual = { id, opcoes: [id, ...outros].sort(() => Math.random() - 0.5), certo };
+  QUIZ.resposta = null;
+}
+function telaQuiz() {
+  if (!QUIZ.atual) novaPergunta();
+  const q = QUIZ.atual, nome = (id) => GUIAS.deuses.find((x) => x.id === id).n;
+  const r = QUIZ.resposta;
+  $app.innerHTML = `<main class="tela">${topoSubapp("Deuses e símbolos")}
+    ${abasGuia([["deuses", "Deuses"], ["simbolos", "Símbolos"], ["quiz", "Quem é?"]], "quiz", "#/mais/deuses")}
+    <div class="quiz">
+      <div class="quiz-placar">${QUIZ.feitos ? `${QUIZ.acertos} de ${QUIZ.feitos} certas` : "Quem é este?"}</div>
+      ${emblema(q.certo, 150)}
+      <div class="quiz-pista">${r ? h(GUIAS.quiz[q.id]) : '<button type="button" class="rodape-acao" id="quiz-dica">Mostrar uma dica</button>'}</div>
+      <div class="quiz-opcoes">${q.opcoes.map((id) => `<button type="button" data-op="${id}" class="${r ? (id === q.id ? "certa" : id === r ? "errada" : "") : ""}" ${r ? "disabled" : ""}>${h(nome(id))}</button>`).join("")}</div>
+      ${r ? `<div class="quiz-fim">${r === q.id ? "Acertou!" : `Era ${h(nome(q.id))}.`} <a href="#/mais/deuses/${q.id}">Saber mais</a></div>
+        <button type="button" class="botao botao-tinta" id="quiz-prox">Próximo ${I.seta}</button>` : ""}
+    </div>
+  </main>`;
+  $app.querySelectorAll("[data-op]").forEach((b) => b.addEventListener("click", () => {
+    QUIZ.resposta = b.dataset.op; QUIZ.feitos++; if (b.dataset.op === q.id) QUIZ.acertos++; telaQuiz();
+  }));
+  document.getElementById("quiz-dica")?.addEventListener("click", (e) => { e.target.closest(".quiz-pista").textContent = GUIAS.quiz[q.id]; });
+  document.getElementById("quiz-prox")?.addEventListener("click", () => { novaPergunta(); telaQuiz(); window.scrollTo(0, 0); });
 }
 
 /* tema claro / escuro */
@@ -1871,6 +2082,8 @@ function rotear() {
   if (!R) return;
   const partes = (location.hash || "#/hoje").slice(2).split("/");
   const [rota, a, b] = partes;
+  $abas.hidden = rota === "motorista";
+  if (rota === "motorista") return telaMotorista(a, b);
   if (rota === "dia" && a && b !== undefined) { marcarAba("roteiro"); return telaAtividade(a, Number(b)); }
   if (rota === "dia" && a) { marcarAba("roteiro"); return telaDia(a); }
   if (rota === "roteiro") { marcarAba("roteiro"); return telaRoteiro(); }
