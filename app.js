@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v18";
+const VERSAO_APP = "v19";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1172,6 +1172,7 @@ const SUBAPPS = [
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-4 3) scale(0.98)">${CAO}</g><circle cx="84" cy="15" r="8.5" fill="#FFFFFF"></circle><g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"><path d="M84.0 3.0 L84.0 -0.5"></path><path d="M92.5 6.5 L95.0 4.0"></path><path d="M96.0 15.0 L99.5 15.0"></path><path d="M92.5 23.5 L95.0 26.0"></path><path d="M84.0 27.0 L84.0 30.5"></path><path d="M75.5 6.5 L73.0 4.0"></path></g></svg>`, tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
   { id: "apps", nome: "Apps úteis", cor: "#A3560A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/></svg>', tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_FUSO}</g></svg>`, tela: () => telaFusos() },
+  { id: "compras", nome: "Compras", cor: "#C25E0A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>', tela: () => telaCompras() },
   { id: "tema", nome: "Tema", cor: "#0D1222", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>', tela: () => telaTema() },
   { id: "atualizar", nome: "Atualizar", cor: "#565D78", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4.2L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.8 4.2l1.2-1.7M20 20v-4.5h-4.5"/></svg>', tela: () => telaAtualizar() },
   { id: "sair", nome: "Sair", cor: "#3B4262", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/><circle cx="12" cy="16" r="1.3"/></svg>', tela: () => telaSair() },
@@ -1313,6 +1314,74 @@ function telaFusos() {
     <div class="lista">${FUSOS.map((f) => `
       <div class="linha-lista"><i class="barra-pais" style="background:${PAISES[f.pais].cor}"></i><div class="meio"><div class="t">${h(f.nome)}</div><div class="s">${h(utcTexto(f.tz, ref))}${f.pais !== "BR" ? " · " + h(difSP(f.tz, ref)) : ""} · ${h(f.obs)}</div></div><div class="hora-fuso" data-tz="${f.tz}">${horaEm(f.tz)}</div></div>`).join("")}</div>
     <div class="nota">Horário de agora em cada lugar. As diferenças já consideram as datas da viagem (a Itália estará no horário de inverno).</div>
+  </main>`;
+}
+
+/* guia de compras */
+const COMPRAS = [
+  { pais: "NP", grupo: "Nepal · Kathmandu", itens: [
+    { n: "Pashmina com selo Chyangra", o: "Xales e echarpes de lã de cabra do Himalaia (a mesma fibra do cashmere).",
+      onde: "Lojas só de pashmina em Durbar Marg e Thamel, com as peças em sacos plásticos nas prateleiras.",
+      dica: "Procure a etiqueta com holograma Chyangra Pashmina, a marca coletiva dos fabricantes nepaleses. Peça para queimar um fio: pashmina vira pó e cheira a cabelo queimado.",
+      cuidado: "O selo ajuda, mas não garante. 'Water pashmina' e pilhas de xales na calçada costumam ser sintéticos.", mapa: "pashmina shop Durbar Marg Kathmandu" },
+    { n: "Gorros, meias e malhas de iaque", o: "Peças grossas e quentes em cores naturais (marrom, cinza, creme).",
+      onde: "Lojas de malha de Thamel e de Asan.",
+      dica: "Lã de iaque de verdade é macia, sem brilho e em tons naturais; compare peso e toque em mais de uma loja.",
+      cuidado: "Muito do 'yak wool' barato é lã de ovelha ou acrílico. Pechinche: o preço de turista costuma ter folga.", mapa: "yak wool shop Thamel Kathmandu" },
+    { n: "Mochilas de cânhamo", o: "Bolsas e mochilas de tecido de cânhamo, feitas à mão no Nepal.",
+      onde: "Thamel e o bazar de Asan; a Hemp House Nepal tem loja em Thamel.",
+      dica: "Faixa de preço: Rs 600 a Rs 5.000, conforme tamanho e acabamento. O tecido de tear manual é mais rústico.",
+      cuidado: "Muitas são mistura de cânhamo com algodão ou urtiga: pergunte quanto é cânhamo. As muito baratas raramente são puras.", mapa: "Hemp House Nepal Thamel" },
+    { n: "Sonam Gear", o: "Marca nepalesa de roupas e equipamentos de trekking: anoraques, fleeces, calças, mochilas.",
+      onde: "Lojas próprias em Thamel (a maior fica na área central do bairro).",
+      dica: "Qualidade boa por bem menos que as marcas internacionais; vale para corta-vento e fleece.",
+      cuidado: "Fuja das imitações de North Face e afins que lotam Thamel; nas lojas da marca não há esse problema.", mapa: "Sonam Gears Thamel Kathmandu" },
+    { n: "Shona's Alpine", o: "Loja tradicional de equipamento de montanha: jaquetas de pluma, sacos de dormir, aluguel de equipamento.",
+      onde: "Amrit Marg, Thamel: descendo da Tridevi Sadak, à direita, logo depois da entrada do Rum Doodle. Abre 9h–18h30.",
+      dica: "Preço fixo, sem pechincha, e costuma sair bem abaixo das lojas vizinhas. Se não tiverem o item, indicam onde achar.",
+      cuidado: "Pagamento só em dinheiro. A maior parte dos produtos é feita no Nepal ou na China.", mapa: "Shona's Alpine Amrit Marg Kathmandu" },
+    { n: "Papel lokta", o: "Papel artesanal feito da casca do arbusto lokta: cadernos, cartões, envelopes e luminárias.",
+      onde: "Lojas de artesanato de Thamel e a Mahaguthi (comércio justo), em Kupondole, Patan.",
+      dica: "Leve e ótimo para presente; caderninhos e cartões são os mais práticos de trazer.",
+      cuidado: "Guarde longe de umidade e não amasse na mala: vá entre roupas ou em pasta rígida.", mapa: "Mahaguthi Kupondole Lalitpur" },
+  ]},
+  { pais: "IN", grupo: "Índia · Delhi e arredores", itens: [
+    { n: "Cosméticos indianos", o: "Linha ayurvédica: óleos, cremes, sabonetes e produtos de cabelo.",
+      onde: "Khan Market (Forest Essentials e Kama Ayurveda, as mais sofisticadas), lojas Nykaa nos shoppings e farmácias (Himalaya, Biotique).",
+      dica: "Himalaya e Biotique de farmácia são baratíssimos e bons para presentes; Forest Essentials vem em embalagem de presente.",
+      cuidado: "Líquidos e cremes acima de 100 ml só na mala despachada; embale bem por causa da pressão no avião.", mapa: "Khan Market New Delhi" },
+    { n: "Masalas de marca", o: "Misturas de especiarias prontas: garam masala, chana, chaat, tikka, chai masala.",
+      onde: "Supermercados (Modern Bazaar, Spencer's, Smart Bazaar) e mercearias do INA Market.",
+      dica: "MDH, Everest e Catch são as marcas mais comuns; sachês pequenos rendem e pesam pouco.",
+      cuidado: "Traga só pacotes industriais lacrados. Na volta ao Brasil, na dúvida, declare no canal 'bens a declarar'.", mapa: "INA Market New Delhi" },
+    { n: "Chás", o: "Darjeeling (mais delicado), Assam (encorpado), Nilgiri e misturas de chai.",
+      onde: "Mittal Stores, no mercado de Sundar Nagar (perto da casa da Pushpa); no Nepal, procure o chá de Ilam.",
+      dica: "Peça para provar e prefira lata ou pacote a vácuo; first flush é a colheita mais leve e cara do Darjeeling.",
+      cuidado: "Folhas soltas a granel podem dar problema na alfândega brasileira: prefira embalagem fechada e, na dúvida, declare.", mapa: "Mittal Stores Sundar Nagar Market Delhi" },
+    { n: "Jeans Spykar", o: "Marca indiana de jeans e casual, com cortes modernos e preço bem abaixo das marcas importadas.",
+      onde: "Lojas próprias nos shoppings de Delhi, como o Select Citywalk (Saket).",
+      dica: "A numeração é em polegadas, como a americana; experimente, porque as modelagens variam.",
+      cuidado: "Confira se é loja da marca: barracas de rua vendem imitações.", mapa: "Spykar store Select Citywalk Saket" },
+    { n: "Mufti", o: "Marca indiana de roupa masculina casual: camisas, jeans, jaquetas e polos.",
+      onde: "Lojas próprias nos shoppings de Delhi (Select Citywalk, Ambience Mall) e em alguns aeroportos.",
+      dica: "Camisas de algodão e linho são o ponto forte; fique de olho em promoções de fim de temporada.",
+      cuidado: "A modelagem é mais justa que a brasileira: experimente antes.", mapa: "Mufti store Select Citywalk Saket" },
+  ]},
+];
+function telaCompras() {
+  const lin = (r, v) => (v ? `<div class="compra-lin"><b>${r}</b><span>${h(v)}</span></div>` : "");
+  $app.innerHTML = `<main class="tela">${topoSubapp("Compras")}
+    <p class="texto">O que vale trazer, onde achar e o que observar. Toque num item para ver os detalhes.</p>
+    ${COMPRAS.map((g) => `
+      <div class="rotulo" style="display:flex;align-items:center;gap:8px"><i class="barra-pais" style="background:${PAISES[g.pais].cor};height:14px"></i>${h(g.grupo)}</div>
+      <div class="lista-densa compras">${g.itens.map((it) => `
+        <details class="compra">
+          <summary><span class="meio"><span class="t">${h(it.n)}</span><span class="s">${h(it.o)}</span></span><span class="seta">${I.seta}</span></summary>
+          <div class="compra-corpo">
+            ${lin("Onde", it.onde)}${lin("Dica", it.dica)}${lin("Cuidado", it.cuidado)}
+            ${it.mapa ? `<a class="botao botao-claro" href="${h(urlMapa(it.mapa))}" target="_blank" rel="noopener">${I.mapa} Ver no mapa</a>` : ""}
+          </div>
+        </details>`).join("")}</div>`).join("")}
   </main>`;
 }
 
