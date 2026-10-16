@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v21";
+const VERSAO_APP = "v22";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -552,7 +552,7 @@ function telaBloqueio(msg = "") {
   $app.innerHTML = `
   <main class="bloqueio">
     <div class="marca">${caoSVG(72, { olhos: "ambos", classe: "cao-senha" })}<h1>Indaly</h1></div>
-    <p>Índia, Nepal e Itália · 30 de outubro a 17 de novembro de 2026.<br>Digite a senha do grupo uma vez neste celular.</p>
+    <p>Índia, Nepal e Itália.<br>Um aplicativo feito sob medida para Marina, Dennis, Luca e Daniel.<br>Digite a senha do grupo uma vez neste celular.</p>
     <form id="form-senha" autocomplete="off">
       <label for="senha">SENHA</label>
       <input id="senha" name="senha" type="password" autocomplete="current-password" placeholder=" " required>
@@ -1261,6 +1261,7 @@ function telaMais() {
     <div class="subapps">
       ${itens.map((s) => `<a class="subapp" href="#/mais/${s.id}"><span class="subapp-icone" style="background:${s.cor}">${s.icone}</span><span class="subapp-nome">${h(s.nome)}</span></a>`).join("")}
     </div>
+    <p class="mais-dedicatoria">Um aplicativo feito sob medida para Marina, Dennis, Luca e Daniel.</p>
   </main>`;
 }
 
