@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v22";
+const VERSAO_APP = "v23";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -707,7 +707,7 @@ async function carregarFotos() {
       }
       img.onload = () => img.classList.add("ok");
       img.src = FOTOS.get(id);
-    } catch (e) { img.closest(".foto-dia")?.remove(); }
+    } catch (e) { (img.closest(".rodape-dia") || img.closest(".foto-dia"))?.remove(); }
   }
 }
 
@@ -767,7 +767,7 @@ function telaHoje() {
         <div class="tracejado"></div>
         <div class="pe">${barra19(i)}<div class="fichas fichas-claras">${fichaTempo(dia)}</div></div>
       </a>
-      ${dia.data === "2026-11-07" ? `<div class="kukur">${caoSVG(48)}<div><b>Hoje é Kukur Tihar</b><span>O dia dos cachorros: em Kathmandu eles ganham guirlanda de flores e tika na testa. Foi daqui que veio o nosso logo.</span></div></div>` : ""}
+      ${dia.data === "2026-11-08" ? `<div class="kukur">${caoSVG(48)}<div><b>Hoje é Kukur Tihar</b><span>O dia dos cachorros: em Kathmandu eles ganham guirlanda de flores e tika na testa. Foi daqui que veio o nosso logo.</span></div></div>` : ""}
       ${foco ? cartaoDiaDeVoo(foco, agoraApp()) : `<div class="proximo">
         <div class="rot">${rot === "HOJE" ? "HOJE" : "PRÓXIMO · " + rot}</div>
         <div class="t">${h(a.titulo)}</div>
@@ -866,8 +866,10 @@ function telaDia(iso) {
         </div>
       </a>`).join("")}
   </section>
-  ${cartaoHospedagem(dia.hospedagem, dia)}`;
+  ${cartaoHospedagem(dia.hospedagem, dia)}
+  ${dia.foto && R.docs[dia.foto]?.arquivo ? `<div class="rodape-dia"><div class="foto-dia"><img alt="" data-foto="${h(dia.foto)}"></div><span>${h(dia.cidade)}</span></div>` : ""}`;
   window.scrollTo(0, 0);
+  carregarFotos();
 }
 
 /* arrastar a tela para trocar de dia: do lado direito para o centro = próximo dia; do esquerdo = anterior */
