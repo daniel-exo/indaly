@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v19";
+const VERSAO_APP = "v20";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -597,8 +597,18 @@ function fichaLugar(f) {
 }
 
 /* rota do dia no Google Maps: paradas na ordem do roteiro */
-const pontoDe = (a, cidade) => (a?.coords ? `${a.coords[0]},${a.coords[1]}` : a?.mapa ? `${a.mapa}, ${cidade}` : null);
-const pontoHosp = (hp) => (!hp || hp.nome === "Avião" ? null : hp.coords ? `${hp.coords[0]},${hp.coords[1]}` : hp.endereco ? `${hp.nome}, ${hp.endereco}` : null);
+// endereço "de verdade": tem número e tamanho razoável (evita "Casa", "Voo noturno…")
+const enderecoValido = (e) => !!e && e.length >= 10 && /\d/.test(e);
+const comCidade = (txt, cidade) => (cidade && !txt.toLowerCase().includes(cidade.toLowerCase()) ? `${txt}, ${cidade}` : txt);
+const pontoDe = (a, cidade) => {
+  if (!a) return null;
+  if (a.coords) return `${a.coords[0]},${a.coords[1]}`;
+  if (a.mapa) return comCidade(a.mapa, cidade);
+  if (enderecoValido(a.endereco)) return a.endereco;
+  return null;
+};
+// hospedagem: coordenadas > nome do hotel no mapa > endereço (casas de amigos vão só pelo endereço)
+const pontoHosp = (hp) => (!hp || hp.nome === "Avião" ? null : hp.coords ? `${hp.coords[0]},${hp.coords[1]}` : hp.mapa ? hp.mapa : enderecoValido(hp.endereco) ? hp.endereco : null);
 function rotaDoDia(dia, i) {
   const trechos = [[]];
   for (const a of dia.atividades) {
@@ -860,6 +870,62 @@ function telaDia(iso) {
   window.scrollTo(0, 0);
 }
 
+/* arrastar a tela para trocar de dia: do lado direito para o centro = próximo dia; do esquerdo = anterior */
+(function () {
+  let g = null;
+  const isoAtual = () => (/^#\/dia\/(\d{4}-\d{2}-\d{2})$/.exec(location.hash) || [])[1];
+  document.addEventListener("touchstart", (e) => {
+    g = null;
+    if (!R || !isoAtual() || e.touches.length !== 1 || !$visor.hidden || document.querySelector(".folha-fundo")) return;
+    const t = e.touches[0], W = window.innerWidth;
+    const lado = t.clientX > W * 0.62 ? "prox" : t.clientX < W * 0.38 ? "ant" : null;
+    if (lado) g = { x0: t.clientX, y0: t.clientY, lado, dx: 0, travado: null };
+  }, { passive: true });
+  document.addEventListener("touchmove", (e) => {
+    if (!g) return;
+    const t = e.touches[0], dx = t.clientX - g.x0, dy = t.clientY - g.y0;
+    if (g.travado === null && Math.hypot(dx, dy) > 10) g.travado = Math.abs(dx) > Math.abs(dy) * 1.3 && (g.lado === "prox" ? dx < 0 : dx > 0);
+    if (!g.travado) return;
+    e.preventDefault();
+    g.dx = dx;
+    const i = idxDia(isoAtual());
+    const existe = g.lado === "prox" ? i < R.dias.length - 1 : i > 0;
+    $app.style.transition = "none";
+    $app.style.transform = `translateX(${existe ? dx * 0.6 : dx * 0.15}px)`;
+    $app.style.opacity = String(1 - Math.min(Math.abs(dx) / 700, 0.3));
+  }, { passive: false });
+  const soltar = () => {
+    if (!g || !g.travado) { g = null; return; }
+    const i = idxDia(isoAtual());
+    const destino = R.dias[g.lado === "prox" ? i + 1 : i - 1];
+    const W = window.innerWidth;
+    const sinal = g.lado === "prox" ? -1 : 1;
+    $app.style.transition = "transform 0.16s ease-out, opacity 0.16s";
+    if (destino && Math.abs(g.dx) > Math.min(90, W * 0.22)) {
+      $app.style.transform = `translateX(${sinal * W * 0.45}px)`;
+      $app.style.opacity = "0";
+      setTimeout(() => {
+        window.addEventListener("hashchange", () => {
+          $app.style.transition = "none";
+          $app.style.transform = `translateX(${-sinal * W * 0.3}px)`;
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            $app.style.transition = "transform 0.2s ease-out, opacity 0.2s";
+            $app.style.transform = "";
+            $app.style.opacity = "";
+          }));
+        }, { once: true });
+        location.hash = "#/dia/" + destino.data;
+      }, 150);
+    } else {
+      $app.style.transform = "";
+      $app.style.opacity = "";
+    }
+    g = null;
+  };
+  document.addEventListener("touchend", soltar);
+  document.addEventListener("touchcancel", soltar);
+})();
+
 function telaAtividade(iso, n) {
   const i = idxDia(iso);
   const dia = R.dias[i];
@@ -889,7 +955,7 @@ function telaAtividade(iso, n) {
     ${a.status === "pendente" ? `<div class="aviso aviso-pendente">${I.pendente}<div><b>Pendência:</b> ${h(a.pendencia || "a resolver")}</div></div>` : ""}
     ${linhas.length ? `<div class="info">${linhas.map(([ic, r, v]) => `<div class="info-linha">${ic}<div><div class="r">${r}</div><div class="v">${v}</div></div></div>`).join("")}</div>` : ""}
     <div class="botoes">
-      <button type="button" class="botao botao-tinta" data-ir="${dia.data}|${n}">${I.carro} Ir até lá</button>
+      ${a.coords || a.mapa || a.endereco || a.local ? `<button type="button" class="botao botao-tinta" data-ir="${dia.data}|${n}">${I.carro} Ir até lá</button>` : ""}
       ${a.docs?.length ? `<button type="button" class="botao botao-claro" data-doc="${h(a.docs[0])}">${I.bilhete} ${a.docs.length > 1 ? "Documentos" : h(rotuloArquivo(R.docs[a.docs[0]].nome))}</button>` : ""}
     </div>
     ${a.docs?.length ? `<div class="rotulo">Documentos</div><div class="lista">${a.docs.map((id) => linhaDoc(id)).join("")}</div>` : ""}
@@ -1093,10 +1159,10 @@ function lugarDe(chave) {
   if (!dia) return null;
   if (k === "h") {
     const hp = dia.hospedagem;
-    return { nome: hp.nome, endereco: hp.endereco, busca: hp.nome + ", " + hp.endereco, coords: hp.coords, pais: dia.pais };
+    return { nome: hp.nome, endereco: hp.endereco, busca: hp.mapa || (enderecoValido(hp.endereco) ? hp.endereco : comCidade(hp.nome, dia.cidade)), coords: hp.coords, pais: dia.pais };
   }
   const a = dia.atividades[Number(k)];
-  return { nome: a.titulo, endereco: a.endereco || a.local || dia.cidade, busca: a.mapa || a.endereco || (a.titulo + ", " + dia.cidade), coords: a.coords, pais: dia.pais };
+  return { nome: a.titulo, endereco: a.endereco || a.local || dia.cidade, busca: a.mapa ? comCidade(a.mapa, dia.cidade) : enderecoValido(a.endereco) ? a.endereco : a.local ? comCidade(a.local, dia.cidade) : dia.cidade, coords: a.coords, pais: dia.pais };
 }
 function abrirIrAte(chave) {
   const l = lugarDe(chave);
