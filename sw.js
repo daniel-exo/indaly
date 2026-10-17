@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v31";
+const VERSAO = "indaly-v32";
 const CASCA = [
   "./",
   "index.html",
@@ -30,7 +30,6 @@ const CASCA = [
   "icons/guia/ganesha-cor.webp",
   "icons/guia/ganesha.png",
   "icons/guia/ganga-cor.webp",
-  "icons/guia/ganga.png",
   "icons/guia/guirlanda-cor.webp",
   "icons/guia/guirlanda.png",
   "icons/guia/hanuman-cor.webp",
