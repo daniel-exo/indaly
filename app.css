@@ -810,5 +810,7 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 
 /* emblemas com imagem */
 .emblema img { width: 74%; height: 74%; object-fit: contain; display: block; }
-.emblema-cor { background: var(--cartao); box-shadow: inset 0 0 0 1px var(--linha-2); }
-.emblema-cor img { width: 86%; height: 86%; }
+.emblema-cor { background: var(--cartao); overflow: hidden; box-shadow: 0 4px 14px rgba(20,34,79,0.18); }
+.emblema-cor img { width: 100%; height: 100%; object-fit: cover; }
+
+.subapp-icone .icone-img { width: 52px; height: 52px; object-fit: contain; }

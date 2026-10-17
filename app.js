@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v29";
+const VERSAO_APP = "v30";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1284,7 +1284,7 @@ const SUBAPPS = [
   { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-6 7) scale(0.95)">${CAO}</g><circle cx="84" cy="15" r="8.5" fill="#FFFFFF"></circle><g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"><path d="M84.0 3.0 L84.0 -0.5"></path><path d="M92.5 6.5 L95.0 4.0"></path><path d="M96.0 15.0 L99.5 15.0"></path><path d="M92.5 23.5 L95.0 26.0"></path><path d="M84.0 27.0 L84.0 30.5"></path><path d="M75.5 6.5 L73.0 4.0"></path></g></svg>`, tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
   { id: "comida", nome: "Comida", cor: "#D6457A", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_COMIDA}</g></svg>`, tela: (b) => telaComida(b && decodeURIComponent(b)) },
-  { id: "deuses", nome: "Deuses e símbolos", cor: "#8C1D40", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19c-3-3-3-8 0-12 3 4 3 9 0 12zM12 19c-4.2-.4-7-3.6-7.4-8 3.6.6 6 3.4 7.4 8zM12 19c4.2-.4 7-3.6 7.4-8-3.6.6-6 3.4-7.4 8zM5 21.5c4-1.2 10-1.2 14 0"/></svg>', tela: (b) => telaDeuses(b) },
+  { id: "deuses", nome: "Deuses e símbolos", cor: "#8C1D40", icone: '<img class="icone-img" src="icons/deuses-mais.png" alt="">', tela: (b) => telaDeuses(b) },
   { id: "gorjetas", nome: "Gorjetas e preços", cor: "#5B3F8C", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7M3 11v4c0 1.4 2.7 2.5 6 2.5 1 0 1.9-.1 2.7-.3"/><circle cx="17" cy="16" r="4.5"/><path d="M17 14v4M15.6 15.2h2.2a.8.8 0 0 1 0 1.6h-1.6a.8.8 0 0 0 0 1.6h2.2"/></svg>', tela: (b) => telaGorjetas(b) },
   { id: "apps", nome: "Apps úteis", cor: "#A3560A", icone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.7"/><g transform="translate(13.5 4.4) scale(0.0965) translate(-13.6 -20.5)" fill="currentColor" stroke="none">${SILHUETA_CAO}</g></svg>`, tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_FUSO}</g></svg>`, tela: () => telaFusos() },
