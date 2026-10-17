@@ -281,12 +281,14 @@ E["vaca"] = g(
     *[f'<circle cx="{x}" cy="{y}" r="2.6" fill="{LARANJA}"/>' for x, y in ((20, 55), (26, 58), (32, 59), (38, 58), (44, 55))],
 )
 
-E["ganga"] = g(
-    f'<path d="M4 44 C12 40 20 48 28 44 C36 40 44 48 52 44 C56 42 58 42 60 43" {S}/>',
-    f'<path d="M4 54 C12 50 20 58 28 54 C36 50 44 58 52 54 C56 52 58 52 60 53" {S}/>',
-    f'<path d="M20 38 C20 32 26 30 32 30 C38 30 44 32 44 38 Z" {F}/>',
-    f'<path d="M32 30 C29 26 29.5 21 32 16 C34.5 21 35 26 32 30 Z" fill="{AMARELO}"/>',
-    f'<circle cx="14" cy="16" r="2.2" fill="{LARANJA}"/><circle cx="50" cy="12" r="2.2" fill="{LARANJA}"/><circle cx="48" cy="24" r="1.8" fill="{AMARELO}"/>',
+E["ganga"] = (
+    '<g transform="translate(32 33) scale(1.18) translate(-32 -34)">'
+    f'<path d="M4 44 C12 40 20 48 28 44 C36 40 44 48 52 44 C56 42 58 42 60 43" {S}/>'
+    f'<path d="M4 54 C12 50 20 58 28 54 C36 50 44 58 52 54 C56 52 58 52 60 53" {S}/>'
+    f'<path d="M20 38 C20 32 26 30 32 30 C38 30 44 32 44 38 Z" {F}/>'
+    f'<path d="M32 30 C29 26 29.5 21 32 16 C34.5 21 35 26 32 30 Z" {F}/>'
+    f'<circle cx="14" cy="16" r="2.2" {F}/><circle cx="50" cy="12" r="2.2" {F}/><circle cx="48" cy="24" r="1.8" {F}/>'
+    '</g>'
 )
 
 E["mudra"] = g(
