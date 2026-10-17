@@ -32,11 +32,17 @@ def cao(gap=LARANJA, olhos="abertos", guirlanda=True, lingua=False):
     s += {"abertos": abertos, "fechados": fechados, "ambos": abertos + fechados, "piscando": aberto(40) + fechado(60)}[olhos]
     y = 55
     s += (f'<path d="M42 {y} C42 {y-2.5} 44 {y-3.5} 50 {y-3.5} C56 {y-3.5} 58 {y-2.5} 58 {y} C58 {y+4} 54 {y+6} 50 {y+6} C46 {y+6} 42 {y+4} 42 {y} Z" fill="{AZUL}"/>'
-          + (f'<path d="M45.4 64.2 C42.6 64.2 39.6 66 38.7 69.2 C37.9 72.2 40 74.4 42.7 73.4 C45.6 72.3 47.4 68.8 47.3 65.6" fill="#FFFFFF" stroke="{AZUL}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
-             f'<path d="M43.4 66.8 C42.4 68.4 42.2 70 42.5 71.2" fill="none" stroke="{AZUL}" stroke-width="1.4" stroke-linecap="round"/>' if lingua else "")
           + f'<path d="M50 {y+6} V{y+9}" stroke="{AZUL}" stroke-width="2" stroke-linecap="round" fill="none"/>'
-          f'<path d="M42 {y+8} C45 {y+11.5} 48 {y+11} 50 {y+9} C52 {y+11} 55 {y+11.5} 58 {y+8}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>'
-          f'<ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="{LARANJA}"/>')
+          + (
+             # língua para fora no canto esquerdo da boca (referência do Daniel): um lóbulo redondo
+             # contornado, preso à haste do focinho, com a dobra em S por dentro; o sorriso fica só à direita
+             f'<path d="M50 {y+9} C51.5 {y+12.5} 55.5 {y+13} 58.4 {y+7.6}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>'
+             f'<path d="M47.4 65.4 C47.6 62.2 45.4 60.2 42.7 60.2 C39.8 60.2 37.7 62.5 37.7 65.2 C37.7 68 39.9 70 42.7 70 C44.7 70 46.3 69 47.1 67.6" fill="#FFFFFF" stroke="{AZUL}" stroke-width="2.1" stroke-linecap="round"/>'
+             f'<path d="M50 {y+9} C49.8 {y+11} 48.8 {y+12.2} 47.1 {y+12.6}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>'
+             f'<path d="M42.7 60.4 C45 61.9 45 64.6 43.1 65.6 C41.3 66.6 41.3 68.4 42.6 69.8" fill="none" stroke="{AZUL}" stroke-width="1.7" stroke-linecap="round"/>'
+             if lingua else
+             f'<path d="M42 {y+8} C45 {y+11.5} 48 {y+11} 50 {y+9} C52 {y+11} 55 {y+11.5} 58 {y+8}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>')
+          + f'<ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="{LARANJA}"/>')
     for k in range(9 if guirlanda else 0):
         a = math.pi * k / 8
         x, yy = 50 - 24 * math.cos(a), 71 + 17 * math.sin(a)

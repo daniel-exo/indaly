@@ -296,6 +296,10 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 .hospedagem-bloco .hospedagem { margin: 0; }
 .hosp-botoes { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); }
 .hosp-botoes .botao-contorno { color: var(--tinta); box-shadow: inset 0 0 0 1.5px var(--linha); background: var(--cartao); }
+/* botões da hospedagem: mesma largura, ícone em cima e rótulo curto embaixo, sem quebrar linha */
+.hosp-botoes { gap: 8px; }
+.hosp-botoes .botao { flex-direction: column; gap: 4px; min-height: 60px; padding: 8px 6px; font-size: 13px; line-height: 1.1; white-space: nowrap; }
+.hosp-botoes .botao svg { font-size: 20px; }
 .data-bloco-mini { width: 42px; height: 40px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; flex-shrink: 0; }
 .data-bloco-mini small { font-size: 10px; font-weight: 600; text-transform: uppercase; color: inherit; opacity: 0.78; }
 .data-bloco-mini b { font-family: var(--mono); font-size: 15px; }
