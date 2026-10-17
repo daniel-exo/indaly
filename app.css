@@ -324,7 +324,7 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 .subapps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px 12px; padding-top: 6px; }
 .subapp { display: flex; flex-direction: column; align-items: center; gap: 8px; text-decoration: none; color: var(--tinta); }
 .subapp-icone { width: 76px; height: 76px; border-radius: 22px; display: flex; align-items: center; justify-content: center; color: #fff; box-shadow: 0 4px 14px rgba(20,34,79,0.18); }
-.subapp-icone svg { font-size: 38px; stroke-width: 1.7; }
+.subapp-icone svg { font-size: 50px; stroke-width: 1.55; }
 .subapp-icone.mini { width: 40px; height: 40px; border-radius: 11px; box-shadow: none; flex-shrink: 0; }
 .subapp-icone.mini svg { font-size: 22px; }
 .subapp-nome { font-size: 13px; font-weight: 600; text-align: center; }
@@ -724,7 +724,8 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .motorista-nome.en { font-family: var(--display); font-size: 30px; line-height: 1.15; }
 .motorista-area.en { font-size: 19px; font-weight: 500; }
 .motorista hr { border: 0; border-top: 2px dashed #D8D4CA; margin: 14px 0; }
-.motorista-tel { margin: 0 20px; background: #14224F; color: #fff; font-size: 17px; min-height: 54px; }
+.motorista-falar { margin: 0 20px; background: var(--pais); color: var(--pais-txt); font-size: 17px; min-height: 58px; border-radius: 16px; }
+.motorista-falar svg { font-size: 24px; }
 
 /* ---------- guias ---------- */
 .guia-abas { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; }
@@ -798,3 +799,12 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .quiz-fim { font-size: 15px; font-weight: 600; }
 .quiz-fim a { color: var(--tinta); margin-left: 6px; }
 .quiz .botao { width: 100%; }
+
+/* barra laranja acesa sob a aba selecionada (o Roteiro, no centro, já tem o anel) */
+.abas a { position: relative; }
+.abas a[aria-current="page"]:not(.aba-central)::after { content: ""; position: absolute; left: 50%; bottom: 0; width: 26px; height: 3px; margin-left: -13px; border-radius: 2px; background: #EE8A24; }
+
+/* emblemas com imagem */
+.emblema img { width: 74%; height: 74%; object-fit: contain; display: block; }
+.emblema-cor { background: var(--cartao); box-shadow: inset 0 0 0 1px var(--linha-2); }
+.emblema-cor img { width: 86%; height: 86%; }
