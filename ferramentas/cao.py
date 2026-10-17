@@ -32,8 +32,8 @@ def cao(gap=LARANJA, olhos="abertos", guirlanda=True, lingua=False):
     s += {"abertos": abertos, "fechados": fechados, "ambos": abertos + fechados, "piscando": aberto(40) + fechado(60)}[olhos]
     y = 55
     s += (f'<path d="M42 {y} C42 {y-2.5} 44 {y-3.5} 50 {y-3.5} C56 {y-3.5} 58 {y-2.5} 58 {y} C58 {y+4} 54 {y+6} 50 {y+6} C46 {y+6} 42 {y+4} 42 {y} Z" fill="{AZUL}"/>'
-          + (f'<g transform="rotate(-108 55.5 64.5)"><path d="M52 63.5 L59 63.5 L59 69 C59 74 52 74 52 69 Z" fill="#E8506A"/>'
-             f'<path d="M55.5 65.5 V70" stroke="#B8324A" stroke-width="1.1" stroke-linecap="round"/></g>' if lingua else "")
+          + (f'<path d="M45.4 64.2 C42.6 64.2 39.6 66 38.7 69.2 C37.9 72.2 40 74.4 42.7 73.4 C45.6 72.3 47.4 68.8 47.3 65.6" fill="#FFFFFF" stroke="{AZUL}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>'
+             f'<path d="M43.4 66.8 C42.4 68.4 42.2 70 42.5 71.2" fill="none" stroke="{AZUL}" stroke-width="1.4" stroke-linecap="round"/>' if lingua else "")
           + f'<path d="M50 {y+6} V{y+9}" stroke="{AZUL}" stroke-width="2" stroke-linecap="round" fill="none"/>'
           f'<path d="M42 {y+8} C45 {y+11.5} 48 {y+11} 50 {y+9} C52 {y+11} 55 {y+11.5} 58 {y+8}" fill="none" stroke="{AZUL}" stroke-width="2" stroke-linecap="round"/>'
           f'<ellipse cx="50" cy="33" rx="2.7" ry="4.4" fill="{LARANJA}"/>')
@@ -62,4 +62,4 @@ if __name__ == "__main__":
     }
     json.dump({k: [v[0], v[1]] for k, v in arq.items()}, open(out, "w"))
     print(json.dumps({"cao": cao(), "ambos": cao(olhos="ambos"), "frase": cao(gap=AZUL),
-                      "semGuirlanda": cao(gap="#C3122F", guirlanda=False), "fuso": cao(gap="#0D7A48", olhos="piscando"), "comida": cao(gap="#D6457A", olhos="fechados", lingua=True)}))
+                      "semGuirlanda": cao(gap="#C3122F", guirlanda=False), "fuso": cao(gap="#0D7A48", olhos="piscando"), "comida": cao(gap="#D6457A", lingua=True)}))

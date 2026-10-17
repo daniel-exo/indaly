@@ -238,7 +238,7 @@ SIMBOLOS = [
   {"id": "ganga", "n": "Mãe Ganga", "l": "गंगा", "cor": "#2D4BA0", "texto": "O rio é uma deusa. Banhar-se nele purifica, e morrer ou ser cremado em Varanasi liberta do ciclo de renascimentos. Por isso os ghats de cremação nunca apagam o fogo.", "ver": [{"busca": "Cremaç", "o": "os ghats de cremação: nada de fotos"}]},
   {"id": "diya", "n": "Diya", "l": "दीया", "cor": "#8C1D40", "texto": "A lamparina de barro com óleo e pavio de algodão. No Diwali e no Tihar elas cobrem parapeitos, janelas e templos: a luz que vence a escuridão.", "ver": [{"busca": "Laxmi", "o": "a noite principal do Diwali e do Tihar"}]},
   {"id": "rangoli", "n": "Rangoli", "l": "रंगोली", "cor": "#D6457A", "texto": "Desenhos de pó colorido, arroz ou pétalas no chão da entrada, feitos para dar boas-vindas aos deuses e às visitas. Cuidado para não pisar.", "ver": [{"busca": "Diwali", "o": "nas portas durante o Diwali"}]},
-  {"id": "guirlanda", "n": "Guirlanda de cravo-de-defunto", "l": "सयपत्री", "cor": "#EE8A24", "texto": "O cravo-de-defunto laranja (sayapatri no Nepal) é a flor das oferendas. No Tihar enfeita portas, vacas, cachorros e irmãos.", "ver": [{"busca": "Kukur", "o": "no dia dos cachorros"}]},
+  {"id": "guirlanda", "n": "Guirlanda de cravo-de-defunto", "l": "सयपत्री", "cor": "#14224F", "texto": "O cravo-de-defunto laranja (sayapatri no Nepal) é a flor das oferendas. No Tihar enfeita portas, vacas, cachorros e irmãos.", "ver": [{"busca": "Kukur", "o": "no dia dos cachorros"}]},
   {"id": "vaca", "n": "Vaca sagrada", "l": "गाई", "cor": "#A3560A", "texto": "A vaca é a mãe que alimenta e não se mata nem se come na tradição hindu. Por isso andam soltas pelas ruas. No Gai Tihar ganham guirlandas e tika.", "ver": [{"busca": "Gai Tihar", "o": "o dia das vacas"}]},
   {"id": "suastica", "n": "Suástica hindu", "l": "स्वस्तिक", "cor": "#EE8A24", "texto": "Sinal milenar de boa sorte e bem-estar (svasti), muito anterior ao nazismo e sem relação com ele. Aparece em portas, cadernos de contas e oferendas.", "ver": []},
   {"id": "lotus", "n": "Lótus", "l": "कमल", "cor": "#14224F", "texto": "Nasce na lama e floresce limpo: pureza e despertar. Trono de deuses e de Buda, e flor nacional da Índia.", "ver": [{"busca": "Lotus", "o": "o Templo de Lótus, casa de oração bahá'í aberta a todas as religiões"}]},
@@ -247,8 +247,20 @@ SIMBOLOS = [
 ]
 
 
+ICONES = os.path.join(os.path.dirname(__file__), "..", "icons", "guia")
+
+
 def com_svg(lista):
-    return [{**x, "svg": E[x["id"]]} for x in lista]
+    """Ilustração própria em SVG; quando há ícone baixado (icons/guia/<id>.png e <id>-cor.webp), usa ele."""
+    saida = []
+    for x in lista:
+        y = {**x, "svg": E[x["id"]]}
+        if os.path.exists(os.path.join(ICONES, x["id"] + ".png")):
+            y["img"] = f"icons/guia/{x['id']}.png"
+        if os.path.exists(os.path.join(ICONES, x["id"] + "-cor.webp")):
+            y["imgCor"] = f"icons/guia/{x['id']}-cor.webp"
+        saida.append(y)
+    return saida
 
 
 QUIZ_PISTAS = {  # pistas curtas para o jogo "Quem é?"
