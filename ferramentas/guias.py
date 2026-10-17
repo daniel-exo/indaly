@@ -175,6 +175,10 @@ DEUSES = [
    "reconhecer": ["Tridente (trishula) com um tamborzinho (damaru)", "Lua crescente e o rio Ganges no cabelo; serpente no pescoço", "Terceiro olho na testa, corpo coberto de cinzas"],
    "texto": "Parte da trindade com Brahma e Vishnu: destrói para que o mundo se renove. Nos templos costuma aparecer como lingam, uma pedra arredondada. Varanasi é a cidade dele.",
    "ver": [{"busca": "Pashupatinath", "o": "o maior templo de Shiva do Nepal"}, {"busca": "Kashi Vishwanath", "o": "um dos 12 jyotirlingas, os lingams mais sagrados"}, {"busca": "Kathmandu Durbar", "o": "o Kal Bhairav, sua forma feroz"}]},
+  {"id": "brahma", "n": "Brahma", "l": "ब्रह्मा", "cor": "#A3560A", "papel": "O criador",
+   "reconhecer": ["Quatro cabeças, uma para cada direção, quase sempre com barba", "Nas mãos, os Vedas, um pote de água e um colar de contas", "Sentado num lótus; o cisne (hamsa) é sua montaria"],
+   "texto": "Completa a trindade com Vishnu e Shiva: é quem cria o universo, e das suas quatro bocas teriam saído os quatro Vedas. Saraswati é sua esposa. Curiosamente, quase não tem templos próprios; o mais famoso fica em Pushkar, no Rajastão.",
+   "ver": []},
   {"id": "vishnu", "n": "Vishnu", "l": "विष्णु", "cor": "#2D4BA0", "papel": "O preservador",
    "reconhecer": ["Pele azul e quatro braços", "Concha (shankha), disco (chakra), maça e lótus nas mãos", "A águia Garuda, sua montaria, muitas vezes ajoelhada na frente do templo"],
    "texto": "Desce à Terra em avatares quando o mundo sai do eixo. Os mais famosos são Rama, herói do Ramayana, e Krishna.",
@@ -266,6 +270,7 @@ def com_svg(lista):
 QUIZ_PISTAS = {  # pistas curtas para o jogo "Quem é?"
   "ganesha": "Cabeça de elefante e um ratinho como montaria",
   "shiva": "Tridente, lua no cabelo e serpente no pescoço",
+  "brahma": "Quatro cabeças e os Vedas nas mãos",
   "vishnu": "Pele azul, concha e disco nas mãos",
   "krishna": "Flauta e pena de pavão",
   "hanuman": "Macaco com uma maça, coberto de laranja",

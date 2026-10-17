@@ -23,6 +23,14 @@ E["ganesha"] = g(
     f'<path d="M32 18 L32 21" stroke="{VERMELHO}" stroke-width="2.6" stroke-linecap="round"/>',
 )
 
+# Brahma: três das quatro cabeças à vista, sobre um lótus
+E["brahma"] = g(
+    f'<circle cx="32" cy="22" r="8" {F}/>', f'<circle cx="19" cy="26" r="6.5" {S}/>', f'<circle cx="45" cy="26" r="6.5" {S}/>',
+    f'<path d="M26 14 L29 8 L32 12 L35 8 L38 14 Z" {F}/>',
+    f'<path d="M18 40 C22 34 42 34 46 40 L44 46 L20 46 Z" {F}/>',
+    f'<path d="M32 58 C26 54 26 48 32 46 C38 48 38 54 32 58 Z M32 58 C22 58 14 54 12 48 C20 47 26 50 32 58 Z M32 58 C42 58 50 54 52 48 C44 47 38 50 32 58 Z" {S}/>',
+)
+
 # Shiva: tridente com tamborzinho (damaru) e a lua crescente
 E["shiva"] = g(
     f'<path d="M32 10 L32 56" {S}/>',
