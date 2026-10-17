@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v30";
+const VERSAO_APP = "v31";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
