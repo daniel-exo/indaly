@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v33";
+const VERSAO_APP = "v34";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1453,6 +1453,10 @@ const COMPRAS = [
       onde: "Lojas próprias em Thamel (a maior fica na área central do bairro).",
       dica: "Qualidade boa por bem menos que as marcas internacionais; vale para corta-vento e fleece.",
       cuidado: "Fuja das imitações de North Face e afins que lotam Thamel; nas lojas da marca não há esse problema.", mapa: "Sonam Gears Thamel Kathmandu" },
+    { n: "Sherpa Adventure Gear", o: "Marca nepalesa de roupa de montanha e de rua: jaquetas de pluma, fleeces, malhas, camisetas e acessórios, com design moderno.",
+      onde: "Loja em Kathmandu, ao lado do Nepal Investment Mega Bank (a região de Thamel concentra as lojas de montanha). Telefone: 01-5363561.",
+      dica: "A marca nasceu no Nepal e se apresenta como de comércio justo, com apoio às comunidades sherpa. Tende a custar mais que a Sonam Gear, em troca de design mais cuidado; bom para presente.",
+      cuidado: "Confirme o horário antes de ir. Vale comparar com Sonam Gear (mais barata) antes de decidir.", mapa: "Sherpa Adventure Gear Kathmandu" },
     { n: "Shona's Alpine", o: "Loja tradicional de equipamento de montanha: jaquetas de pluma, sacos de dormir, aluguel de equipamento.",
       onde: "Amrit Marg, Thamel: descendo da Tridevi Sadak, à direita, logo depois da entrada do Rum Doodle. Abre 9h–18h30.",
       dica: "Preço fixo, sem pechincha, e costuma sair bem abaixo das lojas vizinhas. Se não tiverem o item, indicam onde achar.",
@@ -1461,6 +1465,10 @@ const COMPRAS = [
       onde: "Lojas de artesanato de Thamel e a Mahaguthi (comércio justo), em Kupondole, Patan.",
       dica: "Leve e ótimo para presente; caderninhos e cartões são os mais práticos de trazer.",
       cuidado: "Guarde longe de umidade e não amasse na mala: vá entre roupas ou em pasta rígida.", mapa: "Mahaguthi Kupondole Lalitpur" },
+    { n: "Diya (lamparina)", o: "A lamparina a óleo do Tihar e do Diwali: de barro, simples e baratíssima, ou de latão, para guardar.",
+      onde: "Nas semanas do Tihar (7 a 11/nov) vendem-se diyas de barro em todas as calçadas e mercados de Kathmandu, como Asan e Indra Chowk. Para as de latão, procure as lojas de metal de Patan, perto da Durbar Square. Em Delhi: Dilli Haat INA (diyas artesanais pintados), Sadar Bazaar (atacado, aceita barganha) e Bhagirath Palace, em Chandni Chowk (lâmpadas de latão).",
+      dica: "Compre um de barro para acender na noite do Tihar, com pavio e óleo (ou ghee) na hora; é mais barato e dura só aquela noite. Para trazer, o de latão é o que resiste: pese na mão, uma peça maciça é mais pesada e tem o fundo liso. Os de barro com pintura à mão (Madhubani) também são bonitos para presente.",
+      cuidado: "Barro quebra fácil: embrulhe cada diya em roupa, no meio da mala despachada. Não deixe óleo dentro na viagem. Nos dias de festa os preços sobem e o estoque acaba, então compre antes ou logo cedo.", mapa: "Dilli Haat INA New Delhi" },
   ]},
   { pais: "IN", grupo: "Índia · Delhi e arredores", itens: [
     { n: "Cosméticos indianos", o: "Linha ayurvédica: óleos, cremes, sabonetes e produtos de cabelo.",
@@ -1589,28 +1597,40 @@ function ondeVer(ver) {
 }
 const emblema = (x, tam = 56) => `<span class="emblema" style="background:${x.cor};width:${tam}px;height:${tam}px">${x.img ? `<img src="${h(x.img)}" alt="" loading="lazy">` : `<svg viewBox="0 0 64 64" aria-hidden="true">${x.svg}</svg>`}</span>`;
 const emblemaCor = (x, tam) => (x.imgCor ? `<span class="emblema emblema-cor" style="width:${tam}px;height:${tam}px"><img src="${h(x.imgCor)}" alt=""></span>` : emblema(x, tam));
+const RELIGIOES = [["todos", "Todas"], ["hindu", "Hindu"], ["budismo", "Budismo"], ["sikh", "Sikh"], ["outros", "Outros"]];
+const REL_COR = { hindu: "#E9592C", budismo: "#B8860B", sikh: "#2D5FA8", outros: "#7A7A86" };
+let relFiltro = "todos";
+function etiquetaRel(x) {
+  const r = x.rel || [];
+  const nome = (k) => RELIGIOES.find((y) => y[0] === k)[1];
+  const lista = r.length >= 3 ? [["outros", "Várias tradições"]] : r.map((k) => [k, k === "outros" ? "Outras / em comum" : nome(k)]);
+  return `<span class="rel-tags">${lista.map(([k, n]) => `<span class="rel-tag"><i style="background:${REL_COR[k]}"></i>${h(n)}</span>`).join("")}</span>`;
+}
 function telaDeuses(sub) {
   comGuias("Deuses e símbolos", () => {
     if (sub === "quiz") return telaQuiz();
     const item = sub && (GUIAS.deuses.find((x) => x.id === sub) || GUIAS.simbolos.find((x) => "s-" + x.id === sub));
     if (item) return telaDeus(item, GUIAS.deuses.includes(item));
     const aba = sub === "simbolos" ? "simbolos" : "deuses";
-    const lista = GUIAS[aba];
+    const lista = GUIAS[aba].filter((x) => relFiltro === "todos" || (x.rel || []).includes(relFiltro));
     const pref = aba === "simbolos" ? "s-" : "";
     $app.innerHTML = `<main class="tela">${topoSubapp("Deuses e símbolos")}
       <p class="texto">Para reconhecer quem é quem nos templos, nas ruas e nas festas.</p>
       ${abasGuia([["deuses", "Deuses"], ["simbolos", "Símbolos"], ["quiz", "Quem é?"]], aba, "#/mais/deuses")}
+      <div class="filtros rel-filtros" role="group" aria-label="Religião">${RELIGIOES.map(([k, n]) => `<button type="button" data-rel="${k}" aria-pressed="${relFiltro === k}">${n}</button>`).join("")}</div>
       <div class="deuses-grade">${lista.map((x) => {
         const onde = ondeVer(x.ver);
         return `<a class="deus-cartao" href="#/mais/deuses/${pref}${x.id}">
           ${emblema(x, 64)}
           <span class="deus-nome">${h(x.n)}</span>
           <span class="deus-local">${h(x.l)}</span>
+          ${etiquetaRel(x)}
           ${x.papel ? `<span class="deus-papel">${h(x.papel)}</span>` : ""}
           ${onde.length ? `<span class="deus-onde">${I.pino} ${h(onde.map((o) => o.d.cidade).filter((c, i, a) => a.indexOf(c) === i).join(" · "))}</span>` : ""}
         </a>`;
-      }).join("")}</div>
+      }).join("") || '<div class="nota" style="grid-column:1/-1">Nada nesta religião por aqui.</div>'}</div>
     </main>`;
+    $app.querySelectorAll("[data-rel]").forEach((b) => b.addEventListener("click", () => { relFiltro = b.dataset.rel; telaDeuses(sub); }));
   });
 }
 function telaDeus(x, ehDeus) {
@@ -1623,7 +1643,7 @@ function telaDeus(x, ehDeus) {
     <a class="voltar" href="#/mais/deuses/${ehDeus ? "deuses" : "simbolos"}">${I.voltar} ${ehDeus ? "Deuses" : "Símbolos"}</a>
     <div class="deus-hero" style="--cor:${x.cor}">
       ${emblemaCor(x, 132)}
-      <div><h1 class="titulo-tela">${h(x.n)}</h1><div class="deus-local grande">${h(x.l)}</div>${x.papel ? `<div class="deus-papel">${h(x.papel)}</div>` : ""}</div>
+      <div><h1 class="titulo-tela">${h(x.n)}</h1><div class="deus-local grande">${h(x.l)}</div>${etiquetaRel(x)}${x.papel ? `<div class="deus-papel">${h(x.papel)}</div>` : ""}</div>
     </div>
     ${x.reconhecer ? `<div class="rotulo">Como reconhecer</div><ul class="deus-lista">${x.reconhecer.map((t) => `<li>${h(t)}</li>`).join("")}</ul>` : ""}
     <p class="texto deus-texto">${h(x.texto)}</p>

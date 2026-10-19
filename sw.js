@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v33";
+const VERSAO = "indaly-v34";
 const CASCA = [
   "./",
   "index.html",

@@ -267,6 +267,24 @@ def com_svg(lista):
     return saida
 
 
+# religião de cada item: h = hindu, b = budismo, s = sikh, o = outros / de várias tradições
+REL = {
+  "ganesha": "h", "shiva": "h", "brahma": "h", "vishnu": "h", "krishna": "h", "hanuman": "h", "lakshmi": "h",
+  "saraswati": "h", "durga": "h", "kali": "h", "nandi": "h", "swaminarayan": "h",
+  "buda": "b", "kumari": "hb", "khanda": "s",
+  "om": "hbo", "tika": "h", "tripundra": "h", "olhos": "b", "bandeiras": "b", "roda": "b", "vajra": "hb",
+  "lingam": "h", "aarti": "h", "ganga": "h", "diya": "hbso", "rangoli": "h", "guirlanda": "h", "vaca": "h",
+  "suastica": "hbo", "lotus": "hb", "mudra": "hb", "namaste": "hbso",
+}
+_REL_NOME = {"h": "hindu", "b": "budismo", "s": "sikh", "o": "outros"}
+
+
+def com_rel(lista):
+    for x in lista:
+        x["rel"] = [_REL_NOME[c] for c in REL[x["id"]]]
+    return lista
+
+
 QUIZ_PISTAS = {  # pistas curtas para o jogo "Quem é?"
   "ganesha": "Cabeça de elefante e um ratinho como montaria",
   "shiva": "Tridente, lua no cabelo e serpente no pescoço",
@@ -287,8 +305,8 @@ guias = {
   "versao": 1,
   "gorjetas": GORJETAS,
   "comida": COMIDA,
-  "deuses": com_svg(DEUSES),
-  "simbolos": com_svg(SIMBOLOS),
+  "deuses": com_rel(com_svg(DEUSES)),
+  "simbolos": com_rel(com_svg(SIMBOLOS)),
   "quiz": QUIZ_PISTAS,
 }
 

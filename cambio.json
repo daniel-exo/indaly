@@ -1,12 +1,12 @@
 {
- "data": "2026-10-14",
+ "data": "2026-10-19",
  "origem": "app de conversão de vocês",
  "reais_por_unidade": {
-  "USD": 5.2088,
-  "EUR": 5.8024,
-  "INR": 0.0547,
-  "NPR": 0.03422,
+  "USD": 5.2329,
+  "EUR": 5.872,
+  "INR": 0.05519,
+  "NPR": 0.034459,
   "BRL": 1
  },
- "nota": "Taxas efetivas informadas pelo Daniel (100 US$ = R$ 520,88 · 100 € = R$ 580,24 · ₹ 1.000 = R$ 54,70 · रू 1.000 = R$ 34,22). Para atualizar, mande as novas taxas para o Claude."
+ "nota": "Taxas efetivas informadas pelo Daniel (R$ 100 = US$ 19,11 · € 17,03 · ₹ 1.811,91 · रू 2.902,00). Para atualizar, mande as novas taxas para o Claude."
 }
