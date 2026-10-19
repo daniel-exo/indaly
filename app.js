@@ -873,6 +873,7 @@ function telaDia(iso) {
       </a>`).join("")}
   </section>
   ${cartaoHospedagem(dia.hospedagem, dia)}
+  ${comprasDoDia(dia.data)}
   ${dia.foto && R.docs[dia.foto]?.arquivo ? `<div class="rodape-dia"><div class="foto-dia"><img alt="" data-foto="${h(dia.foto)}"></div><span>${h(dia.cidade)}</span></div>` : ""}`;
   window.scrollTo(0, 0);
   carregarFotos();
@@ -1288,7 +1289,7 @@ const SUBAPPS = [
   { id: "gorjetas", nome: "Gorjetas e preços", cor: "#5B3F8C", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7M3 11v4c0 1.4 2.7 2.5 6 2.5 1 0 1.9-.1 2.7-.3"/><circle cx="17" cy="16" r="4.5"/><path d="M17 14v4M15.6 15.2h2.2a.8.8 0 0 1 0 1.6h-1.6a.8.8 0 0 0 0 1.6h2.2"/></svg>', tela: (b) => telaGorjetas(b) },
   { id: "apps", nome: "Apps úteis", cor: "#A3560A", icone: `<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.7"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.7"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.7"/><g transform="translate(13.5 4.4) scale(0.0965) translate(-13.6 -20.5)" fill="currentColor" stroke="none">${SILHUETA_CAO}</g></svg>`, tela: () => telaApps() },
   { id: "fusos", nome: "Fusos", cor: "#0D7A48", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_FUSO}</g></svg>`, tela: () => telaFusos() },
-  { id: "compras", nome: "Compras", cor: "#C25E0A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>', tela: () => telaCompras() },
+  { id: "compras", nome: "Compras", cor: "#C25E0A", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>', tela: (b) => telaCompras(b) },
   { id: "tema", nome: "Tema", cor: "#0D1222", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>', tela: () => telaTema() },
   { id: "atualizar", nome: "Atualizar", cor: "#565D78", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.8-4.2L4 8.5M4 4v4.5h4.5M4 13a8 8 0 0 0 14.8 4.2l1.2-1.7M20 20v-4.5h-4.5"/></svg>', tela: () => telaAtualizar() },
   { id: "sair", nome: "Sair", cor: "#3B4262", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/><circle cx="12" cy="16" r="1.3"/></svg>', tela: () => telaSair() },
@@ -1435,79 +1436,155 @@ function telaFusos() {
 }
 
 /* guia de compras */
-const COMPRAS = [
-  { pais: "NP", grupo: "Nepal · Kathmandu", itens: [
-    { n: "Pashmina com selo Chyangra", o: "Xales e echarpes de lã de cabra do Himalaia (a mesma fibra do cashmere).",
-      onde: "Lojas só de pashmina em Durbar Marg e Thamel, com as peças em sacos plásticos nas prateleiras.",
-      dica: "Procure a etiqueta com holograma Chyangra Pashmina, a marca coletiva dos fabricantes nepaleses. Peça para queimar um fio: pashmina vira pó e cheira a cabelo queimado.",
-      cuidado: "O selo ajuda, mas não garante. 'Water pashmina' e pilhas de xales na calçada costumam ser sintéticos.", mapa: "pashmina shop Durbar Marg Kathmandu" },
-    { n: "Gorros, meias e malhas de iaque", o: "Peças grossas e quentes em cores naturais (marrom, cinza, creme).",
-      onde: "Lojas de malha de Thamel e de Asan.",
-      dica: "Lã de iaque de verdade é macia, sem brilho e em tons naturais; compare peso e toque em mais de uma loja.",
-      cuidado: "Muito do 'yak wool' barato é lã de ovelha ou acrílico. Pechinche: o preço de turista costuma ter folga.", mapa: "yak wool shop Thamel Kathmandu" },
-    { n: "Mochilas de cânhamo", o: "Bolsas e mochilas de tecido de cânhamo, feitas à mão no Nepal.",
-      onde: "Thamel e o bazar de Asan; a Hemp House Nepal tem loja em Thamel.",
-      dica: "Faixa de preço: Rs 600 a Rs 5.000, conforme tamanho e acabamento. O tecido de tear manual é mais rústico.",
-      cuidado: "Muitas são mistura de cânhamo com algodão ou urtiga: pergunte quanto é cânhamo. As muito baratas raramente são puras.", mapa: "Hemp House Nepal Thamel" },
-    { n: "Sonam Gear", o: "Marca nepalesa de roupas e equipamentos de trekking: anoraques, fleeces, calças, mochilas.",
-      onde: "Lojas próprias em Thamel (a maior fica na área central do bairro).",
-      dica: "Qualidade boa por bem menos que as marcas internacionais; vale para corta-vento e fleece.",
-      cuidado: "Fuja das imitações de North Face e afins que lotam Thamel; nas lojas da marca não há esse problema.", mapa: "Sonam Gears Thamel Kathmandu" },
-    { n: "Sherpa Adventure Gear", o: "Marca nepalesa de roupa de montanha e de rua: jaquetas de pluma, fleeces, malhas, camisetas e acessórios, com design moderno.",
-      onde: "Loja em Kathmandu, ao lado do Nepal Investment Mega Bank (a região de Thamel concentra as lojas de montanha). Telefone: 01-5363561.",
-      dica: "A marca nasceu no Nepal e se apresenta como de comércio justo, com apoio às comunidades sherpa. Tende a custar mais que a Sonam Gear, em troca de design mais cuidado; bom para presente.",
-      cuidado: "Confirme o horário antes de ir. Vale comparar com Sonam Gear (mais barata) antes de decidir.", mapa: "Sherpa Adventure Gear Kathmandu" },
-    { n: "Shona's Alpine", o: "Loja tradicional de equipamento de montanha: jaquetas de pluma, sacos de dormir, aluguel de equipamento.",
-      onde: "Amrit Marg, Thamel: descendo da Tridevi Sadak, à direita, logo depois da entrada do Rum Doodle. Abre 9h–18h30.",
-      dica: "Preço fixo, sem pechincha, e costuma sair bem abaixo das lojas vizinhas. Se não tiverem o item, indicam onde achar.",
-      cuidado: "Pagamento só em dinheiro. A maior parte dos produtos é feita no Nepal ou na China.", mapa: "Shona's Alpine Amrit Marg Kathmandu" },
-    { n: "Papel lokta", o: "Papel artesanal feito da casca do arbusto lokta: cadernos, cartões, envelopes e luminárias.",
-      onde: "Lojas de artesanato de Thamel e a Mahaguthi (comércio justo), em Kupondole, Patan.",
-      dica: "Leve e ótimo para presente; caderninhos e cartões são os mais práticos de trazer.",
-      cuidado: "Guarde longe de umidade e não amasse na mala: vá entre roupas ou em pasta rígida.", mapa: "Mahaguthi Kupondole Lalitpur" },
-    { n: "Diya (lamparina)", o: "A lamparina a óleo do Tihar e do Diwali: de barro, simples e baratíssima, ou de latão, para guardar.",
-      onde: "Nas semanas do Tihar (7 a 11/nov) vendem-se diyas de barro em todas as calçadas e mercados de Kathmandu, como Asan e Indra Chowk. Para as de latão, procure as lojas de metal de Patan, perto da Durbar Square. Em Delhi: Dilli Haat INA (diyas artesanais pintados), Sadar Bazaar (atacado, aceita barganha) e Bhagirath Palace, em Chandni Chowk (lâmpadas de latão).",
-      dica: "Compre um de barro para acender na noite do Tihar, com pavio e óleo (ou ghee) na hora; é mais barato e dura só aquela noite. Para trazer, o de latão é o que resiste: pese na mão, uma peça maciça é mais pesada e tem o fundo liso. Os de barro com pintura à mão (Madhubani) também são bonitos para presente.",
-      cuidado: "Barro quebra fácil: embrulhe cada diya em roupa, no meio da mala despachada. Não deixe óleo dentro na viagem. Nos dias de festa os preços sobem e o estoque acaba, então compre antes ou logo cedo.", mapa: "Dilli Haat INA New Delhi" },
-  ]},
-  { pais: "IN", grupo: "Índia · Delhi e arredores", itens: [
-    { n: "Cosméticos indianos", o: "Linha ayurvédica: óleos, cremes, sabonetes e produtos de cabelo.",
-      onde: "Khan Market (Forest Essentials e Kama Ayurveda, as mais sofisticadas), lojas Nykaa nos shoppings e farmácias (Himalaya, Biotique).",
-      dica: "Himalaya e Biotique de farmácia são baratíssimos e bons para presentes; Forest Essentials vem em embalagem de presente.",
-      cuidado: "Líquidos e cremes acima de 100 ml só na mala despachada; embale bem por causa da pressão no avião.", mapa: "Khan Market New Delhi" },
-    { n: "Masalas de marca", o: "Misturas de especiarias prontas: garam masala, chana, chaat, tikka, chai masala.",
-      onde: "Supermercados (Modern Bazaar, Spencer's, Smart Bazaar) e mercearias do INA Market.",
-      dica: "MDH, Everest e Catch são as marcas mais comuns; sachês pequenos rendem e pesam pouco.",
-      cuidado: "Traga só pacotes industriais lacrados. Na volta ao Brasil, na dúvida, declare no canal 'bens a declarar'.", mapa: "INA Market New Delhi" },
-    { n: "Chás", o: "Darjeeling (mais delicado), Assam (encorpado), Nilgiri e misturas de chai.",
-      onde: "Mittal Stores, no mercado de Sundar Nagar; no Nepal, procure o chá de Ilam.",
-      dica: "Peça para provar e prefira lata ou pacote a vácuo; first flush é a colheita mais leve e cara do Darjeeling.",
-      cuidado: "Folhas soltas a granel podem dar problema na alfândega brasileira: prefira embalagem fechada e, na dúvida, declare.", mapa: "Mittal Stores Sundar Nagar Market Delhi" },
-    { n: "Jeans Spykar", o: "Marca indiana de jeans e casual, com cortes modernos e preço bem abaixo das marcas importadas.",
-      onde: "Lojas próprias nos shoppings de Delhi, como o Select Citywalk (Saket).",
-      dica: "A numeração é em polegadas, como a americana; experimente, porque as modelagens variam.",
-      cuidado: "Confira se é loja da marca: barracas de rua vendem imitações.", mapa: "Spykar store Select Citywalk Saket" },
-    { n: "Mufti", o: "Marca indiana de roupa masculina casual: camisas, jeans, jaquetas e polos.",
-      onde: "Lojas próprias nos shoppings de Delhi (Select Citywalk, Ambience Mall) e em alguns aeroportos.",
-      dica: "Camisas de algodão e linho são o ponto forte; fique de olho em promoções de fim de temporada.",
-      cuidado: "A modelagem é mais justa que a brasileira: experimente antes.", mapa: "Mufti store Select Citywalk Saket" },
-  ]},
-];
-function telaCompras() {
-  const lin = (r, v) => (v ? `<div class="compra-lin"><b>${r}</b><span>${h(v)}</span></div>` : "");
+/* ---------- compras: itens, marcas e lojas ligados entre si (compras.json, conteúdo público) ---------- */
+let COMPRAS = null;
+function carregarCompras() {
+  if (COMPRAS) return Promise.resolve(COMPRAS);
+  return fetch("compras.json").then((r) => { if (!r.ok) throw 0; return r.json(); }).then((j) => (COMPRAS = indexarCompras(j)));
+}
+function indexarCompras(j) {
+  const por = (arr) => Object.fromEntries(arr.map((x) => [x.id, x]));
+  j.L = por(j.lojas); j.M = por(j.marcas); j.I = por(j.itens); j.C = por(j.categorias);
+  for (const l of j.lojas) { l._marcas = []; l._itens = []; }
+  for (const m of j.marcas) {
+    m._itens = j.itens.filter((i) => i.marcas.includes(m.id)).map((i) => i.id);
+    for (const id of m.lojas) j.L[id]._marcas.push(m.id);
+  }
+  for (const i of j.itens) {
+    const ls = new Set(i.lojas);
+    for (const m of i.marcas) for (const id of j.M[m].lojas) ls.add(id);
+    i._lojas = [...ls].sort((a, b) => ordemLoja(j.L[a], j.L[b]));
+    for (const id of ls) j.L[id]._itens.push(i.id);
+  }
+  for (const m of j.marcas) m.lojas.sort((a, b) => ordemLoja(j.L[a], j.L[b]));
+  j.lojas.sort(ordemLoja);
+  return j;
+}
+const ordemLoja = (a, b) => (a.dias[0] || "9").localeCompare(b.dias[0] || "9") || a.n.localeCompare(b.n);
+const SACOLA = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l-1.2 12.2a1 1 0 0 1-1 .8H7.2a1 1 0 0 1-1-.8z"/><path d="M9 10V6.5a3 3 0 0 1 6 0V10"/></svg>';
+const CRUZ = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9.5 4h5v5.5H20v5h-5.5V20h-5v-5.5H4v-5h5.5z"/></svg>';
+const diaNum = (iso) => iso.slice(8);
+function diasTexto(dias) {
+  if (!dias.length) return "";
+  const n = dias.map(diaNum);
+  return (n.length === 1 ? n[0] : n.slice(0, -1).join(", ") + " e " + n[n.length - 1]) + "/" + MESES[dataDe(dias[0]).getMonth()];
+}
+const mapaLoja = (l) => l.link || urlMapa(l.mapa || `${l.n} ${l.cidade}`);
+const icLoja = (l) => `<span class="ic" style="${corBloco(PAISES[l.pais])}">${l.tipo === "Farmácia" ? CRUZ : SACOLA}</span>`;
+const icLetra = (txt, estilo) => `<span class="ic ic-letra" style="${estilo}">${h(txt.replace(/^[^A-Za-zÀ-ú]+/, "")[0] || "·")}</span>`;
+function linhaLoja(l, C, semData = false) {
+  const oque = l._marcas.map((id) => C.M[id].n).concat(l._itens.filter((id) => !C.I[id].marcas.some((m) => l._marcas.includes(m))).map((id) => C.I[id].n));
+  return `<a class="cart-item" href="#/mais/compras/loja/${l.id}">${icLoja(l)}<span class="meio"><span class="t">${h(l.n)}</span><span class="s">${h(oque.slice(0, 4).join(", ") || l.area)}</span></span>${l.dias.length && !semData ? `<span class="data">${h(diasTexto(l.dias))}</span>` : `<span class="seta">${I.seta}</span>`}</a>`;
+}
+function linhaMarca(m) {
+  return `<a class="cart-item" href="#/mais/compras/marca/${m.id}">${icLetra(m.n, corBloco(PAISES[m.origem]))}<span class="meio"><span class="t">${h(m.n)}</span><span class="s">${h(m.o)}</span></span><span class="seta">${I.seta}</span></a>`;
+}
+function linhaItem(i, C) {
+  const marcas = i.marcas.map((id) => C.M[id].n).join(", ");
+  return `<a class="cart-item" href="#/mais/compras/item/${i.id}">${icLetra(i.n, "background:var(--linha-2);color:var(--tinta)")}<span class="meio"><span class="t">${h(i.n)}</span><span class="s">${h(marcas || i.o)}</span></span><span class="seta">${I.seta}</span></a>`;
+}
+const linhaCompra = (r, v, cls = "") => (v ? `<div class="compra-lin ${cls}"><b>${r}</b><span>${h(v)}</span></div>` : "");
+const ABAS_COMPRAS = [["lojas", "Lojas no trajeto"], ["itens", "O que comprar"], ["marcas", "Marcas"]];
+
+function telaCompras(sub) {
+  const id = decodeURIComponent((location.hash.split("/")[4] || ""));
+  if (!COMPRAS) {
+    $app.innerHTML = `<main class="tela">${topoSubapp("Compras")}<div class="carregando">Abrindo…</div></main>`;
+    const rota = location.hash;
+    carregarCompras().then(() => { if (location.hash === rota) rotear(); })
+      .catch(() => { if (location.hash === rota) $app.querySelector(".carregando").textContent = "Não consegui abrir as compras. Conecte uma vez à internet."; });
+    return;
+  }
+  const C = COMPRAS;
+  if (sub === "loja" && C.L[id]) return telaCompraLoja(C.L[id], C);
+  if (sub === "marca" && C.M[id]) return telaCompraMarca(C.M[id], C);
+  if (sub === "item" && C.I[id]) return telaCompraItem(C.I[id], C);
+  const aba = ABAS_COMPRAS.some((a) => a[0] === sub) ? sub : "lojas";
+  let corpo = "";
+  if (aba === "lojas") {
+    const hoje = hojeISO();
+    const deHoje = C.lojas.filter((l) => l.dias.includes(hoje));
+    const cidades = [...new Set(C.lojas.map((l) => l.cidade))];
+    corpo = `<p class="texto">Lojas escolhidas pelo caminho de vocês. Os dias à direita são quando passam perto.</p>
+      ${deHoje.length ? `<div class="rotulo" style="display:flex;align-items:center;gap:8px"><i class="barra-pais" style="background:${PAISES[deHoje[0].pais].cor};height:14px"></i>Por perto hoje · ${h(deHoje[0].cidade)}</div><div class="lista-densa">${deHoje.map((l) => linhaLoja(l, C, true)).join("")}</div>` : ""}
+      ${cidades.map((c) => {
+        const ls = C.lojas.filter((l) => l.cidade === c && !deHoje.includes(l));
+        if (!ls.length) return "";
+        const pais = PAISES[ls[0].pais];
+        return `<div class="rotulo" style="display:flex;align-items:center;gap:8px"><i class="barra-pais" style="background:${pais.cor};height:14px"></i>${h(c)}</div>
+          <div class="lista-densa">${ls.map((l) => linhaLoja(l, C)).join("")}</div>`;
+      }).join("")}`;
+  } else {
+    const lista = aba === "itens" ? C.itens : C.marcas;
+    corpo = C.categorias.map((cat) => {
+      const xs = lista.filter((x) => x.cat === cat.id);
+      return xs.length ? `<div class="rotulo">${h(cat.n)}</div><div class="lista-densa">${xs.map((x) => (aba === "itens" ? linhaItem(x, C) : linhaMarca(x))).join("")}</div>` : "";
+    }).join("");
+  }
   $app.innerHTML = `<main class="tela">${topoSubapp("Compras")}
-    <p class="texto">O que vale trazer, onde achar e o que observar. Toque num item para ver os detalhes.</p>
-    ${COMPRAS.map((g) => `
-      <div class="rotulo" style="display:flex;align-items:center;gap:8px"><i class="barra-pais" style="background:${PAISES[g.pais].cor};height:14px"></i>${h(g.grupo)}</div>
-      <div class="lista-densa compras">${g.itens.map((it) => `
-        <details class="compra">
-          <summary><span class="meio"><span class="t">${h(it.n)}</span><span class="s">${h(it.o)}</span></span><span class="seta">${I.seta}</span></summary>
-          <div class="compra-corpo">
-            ${lin("Onde", it.onde)}${lin("Dica", it.dica)}${lin("Cuidado", it.cuidado)}
-            ${it.mapa ? `<a class="botao botao-claro" href="${h(urlMapa(it.mapa))}" target="_blank" rel="noopener">${I.mapa} Ver no mapa</a>` : ""}
-          </div>
-        </details>`).join("")}</div>`).join("")}
+    ${abasGuia(ABAS_COMPRAS, aba, "#/mais/compras")}
+    ${corpo}
+    <div class="nota">Endereços e horários conferidos no Google em ${h(dataMedia(C.atualizado))}. Horário de loja muda, sobretudo no Diwali e no Tihar: confira no mapa antes de ir.</div>
   </main>`;
+}
+
+function topoCompra(voltar, rotulo, titulo) {
+  return `<a class="voltar" href="#/mais/compras/${voltar}">${I.voltar} ${h(rotulo)}</a><h1 class="titulo-tela">${h(titulo)}</h1>`;
+}
+function telaCompraLoja(l, C) {
+  const pais = PAISES[l.pais];
+  const marcas = l._marcas.map((id) => C.M[id]);
+  const itens = l._itens.map((id) => C.I[id]);
+  $app.innerHTML = `<main class="tela">${topoCompra("lojas", "Lojas", l.n)}
+    <div class="compra-chips"><span class="compra-chip" style="${corBloco(pais)}">${h(l.cidade)}</span><span class="compra-chip">${h(l.tipo)}</span>${l.rede && l.rede !== l.n ? `<span class="compra-chip">${h(l.rede)}</span>` : ""}</div>
+    ${l.o ? `<p class="texto">${h(l.o)}</p>` : ""}
+    <div class="compra-corpo cartao-compra">
+      ${linhaCompra("Onde", l.area)}${linhaCompra("Endereço", l.endereco)}${linhaCompra("Horário", l.horario)}${linhaCompra("Atenção", l.folga, "atencao")}${linhaCompra("Cuidado", l.cuidado)}
+      ${l.dias.length ? `<div class="compra-lin"><b>Passam perto</b><div class="compra-chips">${l.dias.map((d) => `<a href="#/dia/${d}">${h(diaCurto(d))} · ${h(R.dias[idxDia(d)]?.cidade || "")}</a>`).join("")}</div></div>` : ""}
+    </div>
+    <div class="botoes">
+      <a class="botao botao-tinta" href="${h(mapaLoja(l))}" target="_blank" rel="noopener">${I.mapa} Ver no mapa</a>
+      ${l.tel ? `<a class="botao botao-claro" href="${h(telLimpo(l.tel))}">${I.tel} Ligar</a>` : ""}
+    </div>
+    ${marcas.length ? `<div class="rotulo">Marcas aqui</div><div class="lista-densa">${marcas.map(linhaMarca).join("")}</div>` : ""}
+    ${itens.length ? `<div class="rotulo">Para comprar aqui</div><div class="lista-densa">${itens.map((i) => linhaItem(i, C)).join("")}</div>` : ""}
+  </main>`;
+}
+function telaCompraMarca(m, C) {
+  const pais = PAISES[m.origem];
+  const lojas = m.lojas.map((id) => C.L[id]);
+  const itens = m._itens.map((id) => C.I[id]);
+  $app.innerHTML = `<main class="tela">${topoCompra("marcas", "Marcas", m.n)}
+    <div class="compra-chips"><span class="compra-chip" style="${corBloco(pais)}">Marca ${pais.nome === "Índia" ? "indiana" : "nepalesa"}</span><span class="compra-chip">${h(C.C[m.cat].n)}</span></div>
+    <p class="texto">${h(m.o)}</p>
+    ${m.dica || m.cuidado ? `<div class="compra-corpo cartao-compra">${linhaCompra("Dica", m.dica)}${linhaCompra("Cuidado", m.cuidado)}</div>` : ""}
+    <div class="rotulo">Onde comprar</div>
+    ${lojas.length ? `<div class="lista-densa">${lojas.map((l) => linhaLoja(l, C)).join("")}</div>` : `<p class="nota">Não fixei uma loja no trajeto: procure a mais perto no mapa.</p>`}
+    ${m.mapa ? `<a class="botao botao-claro" style="align-self:flex-start" href="${h(urlMapa(m.mapa))}" target="_blank" rel="noopener">${I.mapa} Procurar no mapa</a>` : ""}
+    ${itens.length ? `<div class="rotulo">Faz parte de</div><div class="lista-densa">${itens.map((i) => linhaItem(i, C)).join("")}</div>` : ""}
+  </main>`;
+}
+function telaCompraItem(i, C) {
+  const marcas = i.marcas.map((id) => C.M[id]);
+  const lojas = i._lojas.map((id) => C.L[id]);
+  $app.innerHTML = `<main class="tela">${topoCompra("itens", "O que comprar", i.n)}
+    <div class="compra-chips"><span class="compra-chip">${h(C.C[i.cat].n)}</span></div>
+    <p class="texto">${h(i.o)}</p>
+    <div class="compra-corpo cartao-compra">${linhaCompra("Dica", i.dica)}${linhaCompra("Cuidado", i.cuidado)}</div>
+    ${marcas.length ? `<div class="rotulo">Marcas</div><div class="lista-densa">${marcas.map(linhaMarca).join("")}</div>` : ""}
+    ${lojas.length ? `<div class="rotulo">Onde achar</div><div class="lista-densa">${lojas.map((l) => linhaLoja(l, C)).join("")}</div>` : ""}
+  </main>`;
+}
+/* no dia do roteiro: lojas por perto, recolhidas para não alongar o dia */
+function comprasDoDia(iso) {
+  if (!COMPRAS) return "";
+  const ls = COMPRAS.lojas.filter((l) => l.dias.includes(iso));
+  if (!ls.length) return "";
+  return `<details class="compra compras-dia">
+    <summary><span class="subapp-icone mini" style="background:#C25E0A">${SACOLA}</span><span class="meio"><span class="t">Compras por perto</span><span class="s">${ls.length} ${ls.length === 1 ? "loja" : "lojas"} · ${h(ls.slice(0, 3).map((l) => l.rede || l.n).join(", "))}${ls.length > 3 ? "…" : ""}</span></span><span class="seta">${I.seta}</span></summary>
+    <div class="lista-densa">${ls.map((l) => linhaLoja(l, COMPRAS, true)).join("")}</div>
+    <a class="compras-dia-todas" href="#/mais/compras/lojas">Ver todas as lojas da viagem ${I.seta}</a>
+  </details>`;
 }
 
 /* ---------- guias: gorjetas e preços, comida, deuses e símbolos (guias.json, conteúdo público) ---------- */
@@ -2126,6 +2203,7 @@ async function entrar() {
   window.addEventListener("hashchange", () => { rotear(); window.scrollTo(0, 0); });
   atualizarTempo();
   guardarOffline();
+  carregarCompras().then(() => { if (/^#\/dia\/[\d-]+$/.test(location.hash)) rotear(); }).catch(() => {});
 }
 
 async function iniciar() {

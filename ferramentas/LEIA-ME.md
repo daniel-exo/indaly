@@ -17,6 +17,13 @@ O roteiro legível (`roteiro.json`) **não fica neste repositório**. Ele está 
    - Não precisa da senha: usa a chave pública `cofre/destinatario.txt`.
 3. Salvar o `roteiro.json` atualizado de volta no projeto e fazer commit/push aqui.
 
+## Compras
+Editar `compras.json` (público, fora do cofre). Três listas ligadas por `id`:
+- `itens`: o que comprar; `marcas` e `lojas` citam ids.
+- `marcas`: cada uma cita as `lojas` onde achar.
+- `lojas`: endereço, horário, `folga`, `tel`, `link` (do Google Maps) ou `mapa` (busca), e `dias` do roteiro em que passam perto.
+  A loja aparece sozinha no dia correspondente, em "Compras por perto".
+
 ## Câmbio
 Editar `cambio.json` → `reais_por_unidade` (quantos reais vale 1 unidade de cada moeda), `data`, `origem`.
 

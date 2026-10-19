@@ -821,3 +821,19 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .rel-filtros { margin: 2px 0 12px; }
 .deus-hero .rel-tags { margin: 4px 0; }
 .rel-filtros { gap: 5px; flex-wrap: nowrap; } .rel-filtros button { padding: 0 11px; font-size: 12.5px; flex: none; }
+
+/* compras: lojas, marcas e itens ligados */
+.ic-letra { font-family: var(--display); font-weight: 800; font-size: 17px; }
+.lista-densa .cart-item .data { align-self: center; padding: 0 2px 0 6px; white-space: nowrap; }
+.compra-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.compra-chip, .compra-chips a { display: inline-flex; align-items: center; min-height: 28px; padding: 0 10px; border-radius: 14px; background: var(--linha-2); color: var(--tinta); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+.compra-chips a { background: var(--cartao); box-shadow: inset 0 0 0 1.5px var(--tinta); min-height: 34px; }
+.cartao-compra { background: var(--cartao); border-radius: 16px; padding: 14px; }
+.compra-lin.atencao span { color: var(--carmim); font-weight: 600; }
+.compras-dia { margin: 14px 20px 0; background: var(--cartao); border-radius: 16px; overflow: hidden; }
+.compras-dia summary { padding: 10px 14px 10px 10px; }
+.compras-dia .subapp-icone.mini { width: 36px; height: 36px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; }
+.compras-dia .subapp-icone.mini svg { font-size: 19px; }
+.compras-dia .lista-densa { border-radius: 0; border-top: 1px solid var(--linha-2); }
+.compras-dia-todas { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 46px; border-top: 1px solid var(--linha-2); font-weight: 600; font-size: 13px; color: var(--tinta); text-decoration: none; }
+.compras-dia-todas svg { font-size: 15px; }
