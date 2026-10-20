@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v35";
+const VERSAO = "indaly-v36";
 const CASCA = [
   "./",
   "index.html",
@@ -11,7 +11,6 @@ const CASCA = [
   "manifest.webmanifest",
   "mala.json",
   "guias.json",
-  "compras.json",
   "icons/icon-192.png",
   "icons/icon-512.png",
   "icons/icon-maskable-512.png",
@@ -91,13 +90,18 @@ const CASCA = [
   "fonts/jetbrains-mono-latin-400-normal.woff2",
   "fonts/jetbrains-mono-latin-600-normal.woff2",
 ];
+const ESSENCIAL = ["./", "index.html", "app.css", "app.js", "vendor/age.js"];
 const CACHE_CASCA = VERSAO + "-casca";
 const CACHE_DADOS = "indaly-dados"; // sobrevive a atualizações do app
 
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_CASCA)
-      .then((c) => Promise.all(CASCA.map((u) => fetch(u, { cache: "reload" }).then((r) => (r.ok ? c.put(u, r) : null)))))
+      // o essencial precisa baixar; o resto (ícones, fontes) não derruba a atualização se falhar
+      .then((c) => Promise.all(CASCA.map((u) => {
+        const p = fetch(u, { cache: "reload" }).then((r) => { if (!r.ok) throw new Error(u); return c.put(u, r); });
+        return ESSENCIAL.includes(u) ? p : p.catch(() => null);
+      })))
       .then(() => self.skipWaiting())
   );
 });

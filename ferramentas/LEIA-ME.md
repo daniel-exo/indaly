@@ -18,7 +18,7 @@ O roteiro legível (`roteiro.json`) **não fica neste repositório**. Ele está 
 3. Salvar o `roteiro.json` atualizado de volta no projeto e fazer commit/push aqui.
 
 ## Compras
-Editar `compras.json` (público, fora do cofre). Três listas ligadas por `id`:
+Ficam dentro do cofre, na chave `compras` do `roteiro.json` (as lojas citam os dias da viagem e a hospedagem, então não podem ir para arquivo público). Três listas ligadas por `id`:
 - `itens`: o que comprar; `marcas` e `lojas` citam ids.
 - `marcas`: cada uma cita as `lojas` onde achar.
 - `lojas`: endereço, horário, `folga`, `tel`, `link` (do Google Maps) ou `mapa` (busca), e `dias` do roteiro em que passam perto.
@@ -32,4 +32,7 @@ Editar `cambio.json` → `reais_por_unidade` (quantos reais vale 1 unidade de ca
 Quem já abriu o app continua funcionando; aparelhos novos usam a senha nova.
 
 ## Atualizar o app (código)
-Ao mudar `app.js`, `app.css` ou `index.html`, aumentar `VERSAO` em `sw.js` para os celulares baixarem a versão nova.
+Ao mudar `app.js`, `app.css` ou `index.html`, aumentar `VERSAO` em `sw.js` e `VERSAO_APP` em `app.js` (os dois com o mesmo número) para os celulares baixarem a versão nova.
+
+## Nunca no repositório público
+O repositório é público. Nada que diga onde o grupo vai estar e quando (datas, hospedagem, nomes de anfitriões, telefones, localizadores) pode ir em arquivo fora de `cofre/`. Na dúvida, vai no `roteiro.json` e é trancado com `montar.mjs`.

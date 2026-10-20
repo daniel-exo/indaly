@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v34";
+const VERSAO_APP = "v36";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1436,11 +1436,12 @@ function telaFusos() {
 }
 
 /* guia de compras */
-/* ---------- compras: itens, marcas e lojas ligados entre si (compras.json, conteúdo público) ---------- */
+/* ---------- compras: itens, marcas e lojas ligados entre si (dentro do cofre: as lojas citam os dias e a hospedagem) ---------- */
 let COMPRAS = null;
 function carregarCompras() {
   if (COMPRAS) return Promise.resolve(COMPRAS);
-  return fetch("compras.json").then((r) => { if (!r.ok) throw 0; return r.json(); }).then((j) => (COMPRAS = indexarCompras(j)));
+  if (!R?.compras) return Promise.reject(new Error("sem compras no roteiro"));
+  return Promise.resolve((COMPRAS = indexarCompras(JSON.parse(JSON.stringify(R.compras)))));
 }
 function indexarCompras(j) {
   const por = (arr) => Object.fromEntries(arr.map((x) => [x.id, x]));
@@ -2179,6 +2180,13 @@ function marcarAba(nome) {
   $abas.querySelectorAll("a").forEach((a) => (a.dataset.aba === nome ? a.setAttribute("aria-current", "page") : a.removeAttribute("aria-current")));
 }
 function rotear() {
+  try { rotearTela(); } catch (e) {
+    console.error(e);
+    $abas.hidden = false;
+    $app.innerHTML = '<main class="tela"><div class="nota">Algo deu errado nesta tela. <a href="#/hoje">Voltar para Hoje</a></div></main>';
+  }
+}
+function rotearTela() {
   if (!R) return;
   const partes = (location.hash || "#/hoje").slice(2).split("/");
   const [rota, a, b] = partes;
@@ -2225,7 +2233,11 @@ async function iniciar() {
     await entrar();
   } catch (e) {
     console.error(e);
-    if (String(e).includes("fetch") || String(e).includes("baixar")) {
+    if (R) {
+      // o roteiro abriu; o erro foi de tela: não apaga a chave
+      $app.innerHTML = '<div class="carregando">Algo deu errado ao abrir esta tela.<br><a href="#/hoje">Voltar para Hoje</a></div>';
+      $abas.hidden = false;
+    } else if (String(e).includes("fetch") || String(e).includes("baixar") || !navigator.onLine) {
       $app.innerHTML = '<div class="carregando">Sem internet e sem cópia guardada do roteiro.<br>Conecte uma vez para baixar.</div>';
     } else {
       apagarLS(LS_CHAVE);
