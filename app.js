@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v37";
+const VERSAO_APP = "v38";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1656,20 +1656,24 @@ function telaComida(sel) {
     const hoje = R.dias[idxDia(hojeISO())];
     const c = C.cidades.find((x) => x.cidade === sel) || C.cidades.find((x) => hoje && (x.cidade === hoje.cidade || (x.cidade === "Roma" && hoje.pais === "IT"))) || C.cidades[0];
     const pedir = C.pedir.find((x) => x.pais === c.pais);
+    const lingua = { IN: "hi", NP: "ne", IT: "it" }[c.pais] || "hi";
     $app.innerHTML = `<main class="tela">${topoSubapp("Comida")}
       ${abasGuia(C.cidades.map((x) => [x.cidade, x.cidade]), c.cidade, "#/mais/comida")}
       <p class="texto">${h(c.texto)}</p>
-      ${pedir ? `<div class="guia-pedir" style="--pais:${PAISES[c.pais].cor};color:${PAISES[c.pais].claro ? "#14224F" : "#FFFFFF"}"><span>Para pedir ${h(pedir.pt)}</span><b lang="${c.pais === "NP" ? "ne" : "hi"}">${h(pedir.local)}</b><i>${h(pedir.lido)}</i></div>` : ""}
+      ${pedir ? `<div class="guia-pedir" style="--pais:${PAISES[c.pais].cor};color:${PAISES[c.pais].claro ? "#14224F" : "#FFFFFF"}"><div class="meio"><span>Para pedir ${h(pedir.pt)}</span><b lang="${lingua}">${h(pedir.local)}</b><i>${h(pedir.lido)}</i></div>
+        <button type="button" class="ouvir ouvir-grande" data-falar="${h(pedir.local)}" aria-label="Ouvir: ${h(pedir.pt)}">${I_OUVIR}</button></div>` : ""}
       <div class="pratos">${c.pratos.map((p) => `
         <article class="prato">
           <div class="prato-topo"><span class="marca-veg ${p.v ? "veg" : "nveg"}" title="${p.v ? "Vegetariano" : "Com carne ou peixe"}"><i></i></span>
-            <div class="meio"><h3>${h(p.n)}</h3>${p.l && p.l !== p.n ? `<span class="prato-local">${h(p.l)}</span>` : ""}</div>${nivelPimenta(p.p)}</div>
+            <div class="meio"><h3>${h(p.n)}</h3>${p.l && p.l !== p.n ? `<span class="prato-local">${h(p.l)}</span>` : ""}</div>${nivelPimenta(p.p)}
+            <button type="button" class="ouvir" data-falar="${h(lingua === "it" ? p.n : p.l || p.n)}" aria-label="Ouvir: ${h(p.n)}">${I_OUVIR}</button></div>
           <p>${h(p.o)}</p>
         </article>`).join("")}</div>
       ${c.pais !== "IT" ? `<details class="compra guia-cuidados"><summary><span class="meio"><span class="t">Comer sem susto</span><span class="s">Água, gelo e comida de rua</span></span><span class="seta">${I.seta}</span></summary>
         <div class="compra-corpo"><ul>${C.cuidados.map((t) => `<li>${h(t)}</li>`).join("")}</ul></div></details>` : ""}
-      <div class="nota"><span class="marca-veg veg"><i></i></span> vegetariano · <span class="marca-veg nveg"><i></i></span> com carne, peixe ou ovo. Na Índia, os produtos e cardápios usam essa mesma marca.</div>
+      <div class="nota"><span class="marca-veg veg"><i></i></span> vegetariano · <span class="marca-veg nveg"><i></i></span> com carne, peixe ou ovo. Na Índia, os produtos e cardápios usam essa mesma marca. Toque no alto-falante para ouvir a pronúncia.</div>
     </main>`;
+    $app.querySelectorAll("[data-falar]").forEach((b) => b.addEventListener("click", () => falar(b.dataset.falar, LINGUAS.find((l) => l.id === lingua))));
   });
 }
 
