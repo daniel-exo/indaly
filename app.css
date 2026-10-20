@@ -837,3 +837,6 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .compras-dia .lista-densa { border-radius: 0; border-top: 1px solid var(--linha-2); }
 .compras-dia-todas { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 46px; border-top: 1px solid var(--linha-2); font-weight: 600; font-size: 13px; color: var(--tinta); text-decoration: none; }
 .compras-dia-todas svg { font-size: 15px; }
+
+.filtro-pessoas { margin-bottom: 6px; }
+.filtro-pessoas button[aria-pressed="true"] { background: #EE8A24; color: #14224F; }

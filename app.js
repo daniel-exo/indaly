@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v36";
+const VERSAO_APP = "v37";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -108,6 +108,8 @@ let TEMPO = (() => { try { return JSON.parse(lerLS(LS_TEMPO)) || null; } catch {
 const OFFLINE = { total: 0, prontos: 0, terminou: false };
 let cambioEstado = null;
 let carteiraFiltro = "todos";
+const LS_PESSOAS = "indaly.carteira.pessoas"; // filtro por pessoa: fica guardado neste celular
+let carteiraPessoas = (() => { try { const v = JSON.parse(lerLS(LS_PESSOAS)); return Array.isArray(v) ? v : []; } catch { return []; } })();
 
 const corDia = (dia) => (dia.data === R.fim && dia.pais === "BR" ? OURO : PAISES[dia.pais]);
 const idxDia = (iso) => R.dias.findIndex((d) => d.data === iso);
@@ -1046,7 +1048,9 @@ function itemCarteira(c) {
 
 function telaCarteira() {
   const hoje = hojeISO();
-  const itens = R.carteira.filter((c) => carteiraFiltro === "todos" || c.cat === carteiraFiltro);
+  const pessoas = carteiraPessoas.filter((p) => R.viajantes.includes(p));
+  const itens = R.carteira.filter((c) => (carteiraFiltro === "todos" || c.cat === carteiraFiltro)
+    && (!pessoas.length || !c.quem || c.quem.some((q) => pessoas.includes(q))));
   const sempre = itens.filter((c) => !c.ate);
   const proximos = itens.filter((c) => c.ate && c.ate >= hoje);
   const usados = itens.filter((c) => c.ate && c.ate < hoje);
@@ -1056,6 +1060,10 @@ function telaCarteira() {
     <div>
       <h1 class="titulo-tela">Carteira</h1>
       <div class="estado-cofre" id="estado-cofre"></div>
+    </div>
+    <div class="filtros filtro-pessoas" role="group" aria-label="De quem">
+      <button type="button" data-pessoa="" aria-pressed="${!pessoas.length}">Todos</button>
+      ${R.viajantes.map((p) => `<button type="button" data-pessoa="${h(p)}" aria-pressed="${pessoas.includes(p)}">${h(p)}</button>`).join("")}
     </div>
     <div class="filtros" role="group" aria-label="Filtrar documentos">
       ${CATS.map((c) => `<button type="button" data-filtro="${c.id}" aria-pressed="${carteiraFiltro === c.id}">${h(c.nome)}</button>`).join("")}
@@ -1067,6 +1075,12 @@ function telaCarteira() {
     <button type="button" class="rodape-acao" id="bloquear">Bloquear este celular</button>
   </main>`;
   $app.querySelectorAll("[data-filtro]").forEach((b) => b.addEventListener("click", () => { carteiraFiltro = b.dataset.filtro; telaCarteira(); }));
+  $app.querySelectorAll("[data-pessoa]").forEach((b) => b.addEventListener("click", () => {
+    const p = b.dataset.pessoa;
+    carteiraPessoas = !p ? [] : pessoas.includes(p) ? pessoas.filter((x) => x !== p) : [...pessoas, p];
+    gravarLS(LS_PESSOAS, JSON.stringify(carteiraPessoas));
+    telaCarteira();
+  }));
   document.getElementById("bloquear").addEventListener("click", () => {
     if (!confirm("Bloquear o Indaly neste celular? Para abrir de novo, será preciso digitar a senha.")) return;
     apagarLS(LS_CHAVE); IDENT = null; R = null; telaBloqueio();
