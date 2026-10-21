@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v39";
+const VERSAO_APP = "v40";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1840,13 +1840,16 @@ async function forcarAtualizacao() {
   const b = document.getElementById("forcar-atualizacao");
   if (b) { b.disabled = true; b.textContent = "Atualizando…"; }
   try {
-    const reg = await navigator.serviceWorker?.getRegistration();
-    await Promise.race([reg?.update(), new Promise((ok) => setTimeout(ok, 4000))]);
-    if ("caches" in window) {
-      const nomes = await caches.keys();
-      await Promise.all(nomes.filter((n) => n.endsWith("-casca")).map((n) => caches.delete(n)));
-      const dados = await caches.open("indaly-dados");
-      for (const arq of ["cofre/roteiro.age", "cofre/versao.json", "cofre/chave.age", "cambio.json"]) await dados.delete(new URL(arq, location.href).href);
+    // pergunta direto à fonte qual é a versão publicada (pulando a cópia de 10 min do GitHub Pages)
+    const txt = await (await fetch("app.js?_=" + Date.now(), { cache: "no-store" })).text();
+    const publicada = (txt.match(/VERSAO_APP = "(v\d+)"/) || [])[1];
+    if (publicada && publicada === VERSAO_APP) { if (b) { b.disabled = false; b.textContent = "Atualizar agora"; } return avisar("O app já está na versão mais nova (" + VERSAO_APP + ")."); }
+    if (navigator.serviceWorker && publicada) {
+      // registra o service worker da versão nova e espera ele assumir (até 15 s)
+      const assumiu = new Promise((ok) => navigator.serviceWorker.addEventListener("controllerchange", ok, { once: true }));
+      const reg = await navigator.serviceWorker.register("sw.js?v=" + publicada, { updateViaCache: "none" });
+      await Promise.race([assumiu, new Promise((ok) => setTimeout(ok, 15000))]);
+      reg.waiting?.postMessage("assumir");
     }
   } catch (e) { console.error(e); }
   history.replaceState(null, "", location.pathname + "#/hoje");
@@ -2231,7 +2234,7 @@ async function entrar() {
 
 async function iniciar() {
   if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("sw.js").then((reg) => {
+    navigator.serviceWorker.register("sw.js?v=" + VERSAO_APP, { updateViaCache: "none" }).then((reg) => {
       reg.addEventListener("updatefound", () => {
         const novo = reg.installing;
         novo?.addEventListener("statechange", () => {
