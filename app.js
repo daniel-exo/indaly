@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v41";
+const VERSAO_APP = "v42";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -501,7 +501,10 @@ function linhaVoo(a) {
   const v = a.voo;
   return [v.numero, v.duracao ? v.duracao + " de voo" : "", v.chega ? "chega " + v.chega + (v.chega_dia ? " (" + v.chega_dia + ")" : "") : ""].filter(Boolean).join(" · ");
 }
-const chipLocalizador = (cod) => `<span class="localizador" role="button" tabindex="0" data-copiar="${h(cod)}" aria-label="Copiar localizador ${h(cod)}"><small>LOCALIZADOR</small><b>${h(cod)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>`;
+const chipLocalizador = (cod, rot = "LOCALIZADOR") => `<span class="localizador" role="button" tabindex="0" data-copiar="${h(cod)}" aria-label="Copiar localizador ${h(cod)}"><small>${h(rot)}</small><b>${h(cod)}</b><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg></span>`;
+// número do bilhete de cada viajante (Buddha Air pede no balcão); toque copia
+const blocoBilhetes = (v) => v.bilhetes?.length ? `<div class="bilhetes"><small>BILHETES</small>${v.bilhetes.map(([n, num]) =>
+  `<span class="bilhete-num" role="button" tabindex="0" data-copiar="${h(num)}" aria-label="Copiar bilhete de ${h(n)}"><i>${h(n)}</i><b>${h(num)}</b></span>`).join("")}</div>` : "";
 function cartaoVoo(a) {
   const v = a.voo;
   return `<section class="voo" aria-label="Voo ${h(v.numero)}">
@@ -512,7 +515,8 @@ function cartaoVoo(a) {
       <div class="dir"><div class="voo-cod">${h(v.para)}</div><div class="voo-hora">${h(v.chega || "—")}</div><div class="voo-rot">${v.chega ? "chegada" + (v.chega_dia ? " · " + h(v.chega_dia) : "") : "volta ao KTM"}</div></div>
     </div>
     <div class="voo-nota">Horário local de cada aeroporto${v.terminal ? " · " + h(v.terminal) : ""}</div>
-    ${chipLocalizador(v.localizador)}
+    ${chipLocalizador(v.localizador, v.rotulo_localizador)}
+    ${blocoBilhetes(v)}
     ${(v.extra || []).map(([r, val]) => `<span class="localizador menor" role="button" tabindex="0" data-copiar="${h(val)}"><small>${h(r.toUpperCase())}</small><b>${h(val)}</b></span>`).join("")}
     ${v.app ? `<a class="botao botao-papel" href="${h(urlApp(v.app))}" ${urlApp(v.app).startsWith("intent:") ? "" : 'target="_blank" rel="noopener"'}>${logoApp(v.app, "app-logo mini")} Abrir o app da ${h(v.cia)}</a>` : ""}
   </section>`;
@@ -694,7 +698,8 @@ function cartaoDiaDeVoo(f, agora) {
       return `<li class="${st}"><b>${horaEm(tz, t)}</b><span>${h(r)}${obs ? ` <small>(${obs})</small>` : ""}</span>${j === prox ? `<em>em ${emQuanto(Math.max(0, min))}</em>` : ""}</li>`;
     }).join("")}</ol>
     <div class="s">Horários locais de ${h(v.de)}${v.terminal ? " · " + h(v.terminal) : ""}</div>
-    ${chipLocalizador(v.localizador)}
+    ${chipLocalizador(v.localizador, v.rotulo_localizador)}
+    ${blocoBilhetes(v)}
     <div class="botoes">
       ${a.docs?.length ? `<button type="button" class="botao botao-papel" data-doc="${h(a.docs[0])}">${I.bilhete} Passagem</button>` : ""}
       ${ap.conexao ? `<a class="botao botao-contorno" href="#/dia/${dia.data}/${n}">${I.seta} Detalhes</a>` : `<button type="button" class="botao botao-contorno" data-ir="${dia.data}|${n}">${I.carro} Ir ao aeroporto</button>`}
@@ -819,7 +824,7 @@ function checkinsHoje(hoje) {
     const v = a.voo;
     if (!v || !CHECKIN[v.app] || v.aeroporto?.conexao || hoje > d.data) continue;
     const sai = instante(d.data, v.sai, TZ_AEROPORTO[v.de] || d.fuso);
-    if (agora < new Date(sai.getTime() - 48 * 3600e3)) continue;
+    if (agora < new Date(sai.getTime() - 48 * 3600e3) || agora >= new Date(sai.getTime() - 60 * 60e3)) continue;
     const cid = { GRU: "São Paulo", FCO: "Roma", DEL: "Delhi", KTM: "Kathmandu", VNS: "Varanasi" };
     lista.push({ texto: `Check-in online · ${v.cia.replace(" Airways", "")} ${cid[v.de] || v.de} → ${cid[v.para] || v.para}`, link: CHECKIN[v.app], sub: `Voo ${dm(d.data)} às ${v.sai} · fecha 1 h antes` });
   }

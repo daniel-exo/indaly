@@ -851,3 +851,9 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .tarefa-ir svg { width: 17px; height: 17px; }
 .tarefa.fechada { background: var(--cartao); color: var(--apagado); }
 .tarefa.fechada .tarefa-ir { background: var(--linha); color: var(--apagado); }
+
+.bilhetes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; align-self: stretch; }
+.bilhetes small { grid-column: 1 / -1; font-family: var(--mono); font-size: 9px; letter-spacing: 0.1em; opacity: 0.75; }
+.bilhete-num { display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; border-radius: 10px; background: var(--papel-fixo); color: var(--tinta-fixo); cursor: pointer; }
+.bilhete-num i { font-style: normal; font-size: 12px; opacity: 0.75; }
+.bilhete-num b { font-family: var(--mono); font-size: 15px; letter-spacing: 0.04em; }
