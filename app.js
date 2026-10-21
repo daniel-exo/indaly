@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v38";
+const VERSAO_APP = "v39";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -797,10 +797,21 @@ function telaHoje() {
       <div class="marca">${caoSVG(30)}<span>Indaly</span></div>
       <div class="relogios">${tzLocal === "America/Sao_Paulo" ? `<b>${horaEm("America/Sao_Paulo")} São Paulo</b>` : relogios(tzLocal, nomeLocal)}</div>
     </div>
+    ${tarefasHoje(hoje)}
     ${corpo}
     ${instalado() ? "" : `<a class="linha-lista convite" href="#/mais/instalar"><span class="subapp-icone mini" style="background:#C3122F"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></span><div class="meio"><div class="t">Instale o Indaly como app</div><div class="s">Ícone na tela inicial e sem barra de endereço</div></div><span class="seta">${I.seta}</span></a>`}
   </main>`;
   carregarFotos();
+}
+
+/* tarefas com data (ex.: e-Arrival Card): aparecem até o dia, e o link só abre a partir de "abre" */
+function tarefasHoje(hoje) {
+  const lista = (R.tarefas || []).filter((t) => hoje <= t.ate);
+  if (!lista.length) return "";
+  const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+  return `<div class="tarefas">${lista.map((t) => hoje >= t.abre
+    ? `<a class="tarefa" href="${h(t.link)}" target="_blank" rel="noopener">${I.pendente}<span class="meio"><b>${h(t.texto)}</b><span>Disponível · até a chegada em ${h(dm(t.ate))}</span></span><span class="tarefa-ir">${I.externo}</span></a>`
+    : `<div class="tarefa fechada" aria-disabled="true">${I.pendente}<span class="meio"><b>${h(t.texto)}</b><span>Disponível a partir de ${h(dm(t.abre))}</span></span><span class="tarefa-ir">${I.externo}</span></div>`).join("")}</div>`;
 }
 
 function barra19(ate) {
@@ -875,7 +886,6 @@ function telaDia(iso) {
       </a>`).join("")}
   </section>
   ${cartaoHospedagem(dia.hospedagem, dia)}
-  ${comprasDoDia(dia.data)}
   ${dia.foto && R.docs[dia.foto]?.arquivo ? `<div class="rodape-dia"><div class="foto-dia"><img alt="" data-foto="${h(dia.foto)}"></div><span>${h(dia.cidade)}</span></div>` : ""}`;
   window.scrollTo(0, 0);
   carregarFotos();
@@ -1590,18 +1600,6 @@ function telaCompraItem(i, C) {
     ${lojas.length ? `<div class="rotulo">Onde achar</div><div class="lista-densa">${lojas.map((l) => linhaLoja(l, C)).join("")}</div>` : ""}
   </main>`;
 }
-/* no dia do roteiro: lojas por perto, recolhidas para não alongar o dia */
-function comprasDoDia(iso) {
-  if (!COMPRAS) return "";
-  const ls = COMPRAS.lojas.filter((l) => l.dias.includes(iso));
-  if (!ls.length) return "";
-  return `<details class="compra compras-dia">
-    <summary><span class="subapp-icone mini" style="background:#C25E0A">${SACOLA}</span><span class="meio"><span class="t">Compras por perto</span><span class="s">${ls.length} ${ls.length === 1 ? "loja" : "lojas"} · ${h(ls.slice(0, 3).map((l) => l.rede || l.n).join(", "))}${ls.length > 3 ? "…" : ""}</span></span><span class="seta">${I.seta}</span></summary>
-    <div class="lista-densa">${ls.map((l) => linhaLoja(l, COMPRAS, true)).join("")}</div>
-    <a class="compras-dia-todas" href="#/mais/compras/lojas">Ver todas as lojas da viagem ${I.seta}</a>
-  </details>`;
-}
-
 /* ---------- guias: gorjetas e preços, comida, deuses e símbolos (guias.json, conteúdo público) ---------- */
 let GUIAS = null;
 function comGuias(titulo, desenhar) {
@@ -2229,7 +2227,6 @@ async function entrar() {
   window.addEventListener("hashchange", () => { rotear(); window.scrollTo(0, 0); });
   atualizarTempo();
   guardarOffline();
-  carregarCompras().then(() => { if (/^#\/dia\/[\d-]+$/.test(location.hash)) rotear(); }).catch(() => {});
 }
 
 async function iniciar() {

@@ -831,13 +831,6 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .compra-chips a { background: var(--cartao); box-shadow: inset 0 0 0 1.5px var(--tinta); min-height: 34px; }
 .cartao-compra { background: var(--cartao); border-radius: 16px; padding: 14px; }
 .compra-lin.atencao span { color: var(--carmim); font-weight: 600; }
-.compras-dia { margin: 14px 20px 0; background: var(--cartao); border-radius: 16px; overflow: hidden; }
-.compras-dia summary { padding: 10px 14px 10px 10px; }
-.compras-dia .subapp-icone.mini { width: 36px; height: 36px; border-radius: 10px; flex: none; display: flex; align-items: center; justify-content: center; color: #fff; }
-.compras-dia .subapp-icone.mini svg { font-size: 19px; }
-.compras-dia .lista-densa { border-radius: 0; border-top: 1px solid var(--linha-2); }
-.compras-dia-todas { display: flex; align-items: center; justify-content: center; gap: 4px; min-height: 46px; border-top: 1px solid var(--linha-2); font-weight: 600; font-size: 13px; color: var(--tinta); text-decoration: none; }
-.compras-dia-todas svg { font-size: 15px; }
 
 .filtro-pessoas { margin-bottom: 6px; }
 .filtro-pessoas button[aria-pressed="true"] { background: #EE8A24; color: #14224F; }
@@ -847,3 +840,14 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .ouvir:active { transform: scale(0.94); }
 .ouvir-grande { width: 48px; height: 48px; background: rgba(255,255,255,0.92); color: #14224F; }
 .ouvir-grande svg { width: 26px; height: 26px; }
+
+.tarefas { display: flex; flex-direction: column; gap: 8px; }
+.tarefa { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; background: var(--acafrao-claro); color: var(--acafrao-escuro); text-decoration: none; }
+.tarefa > svg { width: 22px; height: 22px; flex: none; }
+.tarefa .meio { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tarefa b { font-size: 15px; line-height: 1.3; }
+.tarefa .meio span { font-size: 12.5px; opacity: 0.85; }
+.tarefa-ir { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; background: #EE8A24; color: #14224F; }
+.tarefa-ir svg { width: 20px; height: 20px; }
+.tarefa.fechada { background: var(--cartao); color: var(--apagado); }
+.tarefa.fechada .tarefa-ir { background: var(--linha); color: var(--apagado); }
