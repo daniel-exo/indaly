@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v40";
+const VERSAO_APP = "v41";
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -805,13 +805,35 @@ function telaHoje() {
 }
 
 /* tarefas com data (ex.: e-Arrival Card): aparecem até o dia, e o link só abre a partir de "abre" */
-function tarefasHoje(hoje) {
-  const lista = (R.tarefas || []).filter((t) => hoje <= t.ate);
-  if (!lista.length) return "";
+// check-in online: as companhias liberam 48 h antes e fecham cerca de 1 h antes
+const CHECKIN = {
+  ita: "https://www.ita-airways.com/gb/en/book-and-prepare/travel-information/check-in-information/online-check-in",
+  airindia: "https://www.airindia.com/in/en/manage/web-checkin.html",
+  indigo: "https://www.goindigo.in/web-check-in.html",
+};
+function checkinsHoje(hoje) {
+  const agora = agoraApp();
   const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
-  return `<div class="tarefas">${lista.map((t) => hoje >= t.abre
-    ? `<a class="tarefa" href="${h(t.link)}" target="_blank" rel="noopener">${I.pendente}<span class="meio"><b>${h(t.texto)}</b><span>Disponível · até a chegada em ${h(dm(t.ate))}</span></span><span class="tarefa-ir">${I.externo}</span></a>`
-    : `<div class="tarefa fechada" aria-disabled="true">${I.pendente}<span class="meio"><b>${h(t.texto)}</b><span>Disponível a partir de ${h(dm(t.abre))}</span></span><span class="tarefa-ir">${I.externo}</span></div>`).join("")}</div>`;
+  const lista = [];
+  for (const d of R.dias) for (const a of d.atividades) {
+    const v = a.voo;
+    if (!v || !CHECKIN[v.app] || v.aeroporto?.conexao || hoje > d.data) continue;
+    const sai = instante(d.data, v.sai, TZ_AEROPORTO[v.de] || d.fuso);
+    if (agora < new Date(sai.getTime() - 48 * 3600e3)) continue;
+    const cid = { GRU: "São Paulo", FCO: "Roma", DEL: "Delhi", KTM: "Kathmandu", VNS: "Varanasi" };
+    lista.push({ texto: `Check-in online · ${v.cia.replace(" Airways", "")} ${cid[v.de] || v.de} → ${cid[v.para] || v.para}`, link: CHECKIN[v.app], sub: `Voo ${dm(d.data)} às ${v.sai} · fecha 1 h antes` });
+  }
+  return lista;
+}
+function tarefasHoje(hoje) {
+  const dm = (iso) => iso.slice(8, 10) + "/" + iso.slice(5, 7);
+  const lista = (R.tarefas || []).filter((t) => hoje <= t.ate)
+    .map((t) => (hoje >= t.abre ? { ...t, sub: `Disponível · até ${dm(t.ate)}` } : { ...t, fechada: `Disponível a partir de ${dm(t.abre)}` }))
+    .concat(checkinsHoje(hoje));
+  if (!lista.length) return "";
+  return `<div class="tarefas">${lista.map((t) => !t.fechada
+    ? `<a class="tarefa" href="${h(t.link)}" target="_blank" rel="noopener"><span class="meio"><b>${I.pendente}${h(t.texto)}</b><span>${h(t.sub)}</span></span><span class="tarefa-ir">${I.externo}</span></a>`
+    : `<div class="tarefa fechada" aria-disabled="true"><span class="meio"><b>${I.pendente}${h(t.texto)}</b><span>${h(t.fechada)}</span></span><span class="tarefa-ir">${I.externo}</span></div>`).join("")}</div>`;
 }
 
 function barra19(ate) {
