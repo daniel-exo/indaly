@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-v42";
+const VERSAO = "indaly-2.00";
 const CASCA = [
   "./",
   "index.html",
@@ -8,6 +8,8 @@ const CASCA = [
   "vendor/age.js",
   "vendor/pdf.min.mjs",
   "vendor/pdf.worker.min.mjs",
+  "vendor/leaflet/leaflet.js",
+  "vendor/leaflet/leaflet.css",
   "manifest.webmanifest",
   "mala.json",
   "guias.json",
@@ -168,6 +170,8 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.hostname.endsWith("gstatic.com") && url.pathname.startsWith("/faviconV2")) return e.respondWith(cachePrimeiro(req));
+  // pedaços do mapa já vistos ficam guardados para abrir sem internet
+  if (url.hostname.endsWith("basemaps.cartocdn.com")) return e.respondWith(cachePrimeiro(req));
   if (url.origin !== self.location.origin) return;
   if (DOCS.test(url.pathname)) return e.respondWith(cachePrimeiro(req));
   if (VIVOS.test(url.pathname)) return e.respondWith(redePrimeiro(req));

@@ -43,7 +43,9 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+/* o deslize entre dias empurra #app para o lado: a página não pode ficar mais larga que a tela, senão a barra de baixo pula junto */
+body { overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--papel);
@@ -71,6 +73,7 @@ h2.secao { margin: 4px 0 0; font-family: var(--display); font-weight: 600; font-
 /* abas */
 .abas {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  transform: translateZ(0); will-change: transform; /* camada própria: não acompanha o deslize */
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
   background: var(--cartao); border-top: 1px solid var(--linha);
   padding: 6px max(8px, calc((100vw - 560px) / 2)) calc(8px + var(--base));
@@ -510,7 +513,7 @@ a.ficha { text-decoration: none; color: inherit; }
 .tempo-grande b { font-family: var(--display); font-weight: 800; font-size: 56px; line-height: 0.9; letter-spacing: -0.03em; display: block; }
 .tempo-grande span { font-size: 15px; font-weight: 600; opacity: 0.9; }
 .tempo-txt { font-size: 16px; font-weight: 600; }
-.tempo-dados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.tempo-dados { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px; }
 .tempo-dados > div { background: rgba(255,255,255,0.16); border-radius: 12px; padding: 8px 10px; display: flex; flex-direction: column; line-height: 1.2; }
 .tempo-dados small { font-size: 11px; opacity: 0.85; }
 .tempo-dados b { font-family: var(--display); font-weight: 600; font-size: 22px; }
@@ -857,3 +860,38 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 .bilhete-num { display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; border-radius: 10px; background: var(--papel-fixo); color: var(--tinta-fixo); cursor: pointer; }
 .bilhete-num i { font-style: normal; font-size: 12px; opacity: 0.75; }
 .bilhete-num b { font-family: var(--mono); font-size: 15px; letter-spacing: 0.04em; }
+
+.frase[data-cartao] { cursor: pointer; }
+.frase-grande { font-size: 46px; line-height: 1.25; font-weight: 800; letter-spacing: -0.01em; }
+.frase-cartao[lang="it"] .frase-grande { font-family: var(--display); }
+.frase-grande-pron { font-size: 24px; line-height: 1.3; font-weight: 600; color: #3B4262; }
+.frase-grande-pt { font-size: 18px; line-height: 1.35; color: #565D78; }
+.frase-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 20px 0; }
+.frase-nav .botao { background: #F5F3EE; color: #14224F; }
+
+.ar-etq { display: inline-flex; align-items: center; gap: 5px; }
+.ar-etq i, .ar-dica i { width: 8px; height: 8px; border-radius: 50%; flex: none; display: inline-block; }
+.ar-ponto { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; box-shadow: 0 0 0 1.5px rgba(255,255,255,0.8); }
+.ar-dica { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,0.92); color: #14224F; font-size: 13px; line-height: 1.35; }
+.fonte-tempo { margin-top: -4px; }
+
+/* mapa da viagem */
+.mapa-caixa { margin: 4px -4px 0; border-radius: 20px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--linha); }
+.mapa { height: min(56vh, 460px); background: var(--linha-2); }
+.mapa .carregando { height: 100%; display: grid; place-items: center; }
+.mapa-dias { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; margin: 10px -20px 0; padding: 2px 20px 4px; }
+.mapa-dias::-webkit-scrollbar { display: none; }
+.mapa-dias button { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px; border-radius: 19px; border: 0; background: var(--cartao); color: var(--tinta); font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.mapa-dias button i { width: 9px; height: 9px; border-radius: 50%; background: var(--pais); }
+.mapa-dias button b { font-family: var(--mono); font-size: 12px; }
+.mapa-dias button span { font-weight: 500; }
+.mapa-dias button[aria-pressed="true"] { background: var(--tinta); color: var(--papel); }
+#mapa-info:not(:empty) { margin-top: 10px; }
+.mapa-pop { display: flex; flex-direction: column; gap: 3px; font-family: var(--texto); min-width: 150px; }
+.mapa-pop small { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: #565D78; text-transform: uppercase; }
+.mapa-pop b { font-size: 14px; color: #14224F; }
+.mapa-pop a { font-weight: 600; color: #A3560A; text-decoration: none; margin-top: 2px; }
+.leaflet-container { font-family: var(--texto); }
+/* o estilo geral de ícones (svg 1em, sem preenchimento) não pode valer dentro do mapa */
+.leaflet-container svg { width: auto; height: auto; fill: revert; stroke: revert; stroke-width: revert; }
+.leaflet-container .leaflet-zoom-animated { will-change: transform; }

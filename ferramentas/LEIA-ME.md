@@ -32,7 +32,7 @@ Editar `cambio.json` → `reais_por_unidade` (quantos reais vale 1 unidade de ca
 Quem já abriu o app continua funcionando; aparelhos novos usam a senha nova.
 
 ## Atualizar o app (código)
-Ao mudar `app.js`, `app.css` ou `index.html`, aumentar `VERSAO` em `sw.js` e `VERSAO_APP` em `app.js` (os dois com o mesmo número) para os celulares baixarem a versão nova.
+Ao mudar `app.js`, `app.css` ou `index.html`, aumentar `VERSAO_APP` em `app.js` (formato 2.00, 2.01, …) e `VERSAO` em `sw.js` ("indaly-" + o mesmo número) para os celulares baixarem a versão nova.
 
 ## Nunca no repositório público
 O repositório é público. Nada que diga onde o grupo vai estar e quando (datas, hospedagem, nomes de anfitriões, telefones, localizadores) pode ir em arquivo fora de `cofre/`. Na dúvida, vai no `roteiro.json` e é trancado com `montar.mjs`.

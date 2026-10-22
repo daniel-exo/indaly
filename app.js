@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "v42";
+const VERSAO_APP = "2.00"; // versão do app: 2.00, 2.01… (sw.js usa "indaly-" + este número)
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -174,7 +174,7 @@ async function guardarOffline() {
 
 /* ---------- previsão do tempo (Open-Meteo, sem chave) ---------- */
 async function atualizarTempo() {
-  if (TEMPO?.v === 2 && Date.now() - TEMPO.em < 3 * 3600 * 1000) return;
+  if (TEMPO?.v === 3 && Date.now() - TEMPO.em < 3 * 3600 * 1000) return;
   const cidades = [];
   for (const d of R.dias) if (!cidades.find((c) => c.cidade === d.cidade)) cidades.push({ cidade: d.cidade, lat: d.lat, lon: d.lon });
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + cidades.map((c) => c.lat).join(",") +
@@ -200,7 +200,27 @@ async function atualizarTempo() {
       });
       porCidade[cidades[i].cidade] = m;
     });
-    TEMPO = { v: 2, em: Date.now(), porCidade };
+    // qualidade do ar (mesmo serviço, sem chave): pior índice AQI (padrão EUA) de cada dia; a previsão cobre uns 5 dias
+    const ar = {};
+    try {
+      const rq = await fetch("https://air-quality-api.open-meteo.com/v1/air-quality?latitude=" + cidades.map((c) => c.lat).join(",") +
+        "&longitude=" + cidades.map((c) => c.lon).join(",") + "&hourly=us_aqi,pm2_5&timezone=auto&forecast_days=7");
+      if (rq.ok) {
+        let aq = await rq.json();
+        if (!Array.isArray(aq)) aq = [aq];
+        aq.forEach((d, i) => {
+          const m = {};
+          (d.hourly?.time || []).forEach((t, j) => {
+            const v = d.hourly.us_aqi[j], pm = d.hourly.pm2_5[j];
+            if (v == null) return;
+            const k = t.slice(0, 10);
+            m[k] = { aqi: Math.max(m[k]?.aqi ?? 0, v), pm: Math.max(m[k]?.pm ?? 0, pm ?? 0) };
+          });
+          ar[cidades[i].cidade] = m;
+        });
+      }
+    } catch {}
+    TEMPO = { v: 3, em: Date.now(), porCidade, ar };
     gravarLS(LS_TEMPO, JSON.stringify(TEMPO));
     const r = location.hash;
     if (r.startsWith("#/mais/tempo") || r.startsWith("#/dia") || r.startsWith("#/hoje") || r === "") rotear();
@@ -1332,9 +1352,10 @@ const FUSOS = [
 /* sub-apps da aba Mais: para acrescentar um novo, basta incluir aqui e criar a função da página */
 const SUBAPPS = [
   { id: "emergencia", nome: "Emergência", cor: "#C3122F", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(0 -9)">${CAO_SEM_GUIRLANDA}</g><path d="M37 67 Q50 74 63 67" fill="none" stroke="#14224F" stroke-width="3" stroke-linecap="round"></path><rect x="29" y="71" width="42" height="25" rx="9" fill="#FFFFFF"></rect><rect x="36" y="71" width="3.6" height="25" fill="#14224F"></rect><rect x="60.4" y="71" width="3.6" height="25" fill="#14224F"></rect><rect x="47.1" y="77" width="5.8" height="15" rx="1.2" fill="#C3122F"></rect><rect x="42.5" y="81.6" width="15" height="5.8" rx="1.2" fill="#C3122F"></rect></svg>`, tela: () => telaEmergencia() },
-  { id: "frases", nome: "Frases", cor: "#14224F", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-10 14) scale(0.88)">${CAO_FRASE}</g><path d="M70 5 H90 A6 6 0 0 1 96 11 V26 A6 6 0 0 1 90 32 H80 L71 39 L73 32 H70 A6 6 0 0 1 64 26 V11 A6 6 0 0 1 70 5 Z" fill="#FFFFFF"></path><circle cx="71.5" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="80" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="88.5" cy="18.5" r="2.6" fill="#14224F"></circle></svg>`, tela: () => telaFrases() },
+  { id: "frases", nome: "Frases", cor: "#14224F", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-10 14) scale(0.88)">${CAO_FRASE}</g><path d="M70 5 H90 A6 6 0 0 1 96 11 V26 A6 6 0 0 1 90 32 H80 L71 39 L73 32 H70 A6 6 0 0 1 64 26 V11 A6 6 0 0 1 70 5 Z" fill="#FFFFFF"></path><circle cx="71.5" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="80" cy="18.5" r="2.6" fill="#14224F"></circle><circle cx="88.5" cy="18.5" r="2.6" fill="#14224F"></circle></svg>`, tela: (b) => (b ? telaFraseCartao(b) : telaFrases()) },
   { id: "mala", nome: "Mala", cor: "#2D4BA0", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6V3.5h6V6"/><rect x="5" y="6" width="14" height="13" rx="2.5"/><path d="M9.5 9.5v6M14.5 9.5v6"/><circle cx="8.5" cy="21" r="1"/><circle cx="15.5" cy="21" r="1"/></svg>', tela: (b) => telaMala(b) },
   { id: "tempo", nome: "Tempo", cor: "#EE8A24", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(-6 7) scale(0.95)">${CAO}</g><circle cx="84" cy="15" r="8.5" fill="#FFFFFF"></circle><g stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"><path d="M84.0 3.0 L84.0 -0.5"></path><path d="M92.5 6.5 L95.0 4.0"></path><path d="M96.0 15.0 L99.5 15.0"></path><path d="M92.5 23.5 L95.0 26.0"></path><path d="M84.0 27.0 L84.0 30.5"></path><path d="M75.5 6.5 L73.0 4.0"></path></g></svg>`, tela: (b) => (b ? telaTempoDia(b) : telaTempo()) },
+  { id: "mapa", nome: "Mapa da viagem", cor: "#0E7C86", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4L3.5 6v14L9 18l6 2 5.5-2V4L15 6z"/><path d="M9 4v14M15 6v14"/></svg>', tela: (b) => telaMapa(b) },
   { id: "comida", nome: "Comida", cor: "#D6457A", icone: `<svg class="icone-cao" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(50 53) scale(1.06) translate(-50 -53)">${CAO_COMIDA}</g></svg>`, tela: (b) => telaComida(b && decodeURIComponent(b)) },
   { id: "deuses", nome: "Deuses e símbolos", cor: "#8C1D40", icone: '<img class="icone-img" src="icons/deuses-mais.png" alt="">', tela: (b) => telaDeuses(b) },
   { id: "gorjetas", nome: "Gorjetas e preços", cor: "#5B3F8C", icone: '<svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="6" ry="2.5"/><path d="M3 7v4c0 1.4 2.7 2.5 6 2.5s6-1.1 6-2.5V7M3 11v4c0 1.4 2.7 2.5 6 2.5 1 0 1.9-.1 2.7-.3"/><circle cx="17" cy="16" r="4.5"/><path d="M17 14v4M15.6 15.2h2.2a.8.8 0 0 1 0 1.6h-1.6a.8.8 0 0 0 0 1.6h2.2"/></svg>', tela: (b) => telaGorjetas(b) },
@@ -1350,6 +1371,113 @@ const instalado = () => window.matchMedia("(display-mode: standalone)").matches 
 let pedidoInstalar = null;
 window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); pedidoInstalar = e; if (location.hash.startsWith("#/mais")) rotear(); });
 window.addEventListener("appinstalled", () => { pedidoInstalar = null; avisar("Indaly instalado na tela inicial."); });
+
+/* ---------- mapa da viagem (Leaflet, carregado só quando abre; o fundo do mapa precisa de internet) ---------- */
+let leafletPronto = null;
+function carregarLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  if (leafletPronto) return leafletPronto;
+  leafletPronto = new Promise((ok, falha) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet"; css.href = "vendor/leaflet/leaflet.css";
+    document.head.appendChild(css);
+    const js = document.createElement("script");
+    js.src = "vendor/leaflet/leaflet.js";
+    js.onload = () => ok(window.L);
+    js.onerror = () => { leafletPronto = null; falha(new Error("leaflet")); };
+    document.head.appendChild(js);
+  });
+  return leafletPronto;
+}
+// pontos de cada dia: a hospedagem e as atividades com coordenadas
+function pontosDoDia(d) {
+  const pts = [];
+  d.atividades.forEach((a, n) => { if (a.coords) pts.push({ ll: a.coords, t: a.titulo, n }); });
+  const hc = d.hospedagem?.coords;
+  if (hc) pts.push({ ll: hc, t: d.hospedagem.nome, n: "h" });
+  if (!pts.length && d.lat != null) pts.push({ ll: [d.lat, d.lon], t: d.cidade, n: -1 });
+  return pts;
+}
+let MAPA = null;
+function telaMapa(sel) {
+  const escuro = document.documentElement.dataset.tema === "escuro" || (!document.documentElement.dataset.tema && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  $app.innerHTML = `<main class="tela tela-mapa">${topoSubapp("Mapa da viagem")}
+    <div class="mapa-caixa"><div id="mapa" class="mapa"><div class="carregando">Abrindo o mapa…</div></div></div>
+    <div class="mapa-dias" id="mapa-dias" role="group" aria-label="Dias">
+      <button type="button" data-dia="" aria-pressed="${!sel}">Viagem toda</button>
+      ${R.dias.map((d, i) => `<button type="button" data-dia="${d.data}" aria-pressed="${sel === d.data}" style="--pais:${corDia(d).cor}"><i></i><b>${i + 1}</b><span>${h(dataMedia(d.data))} · ${h(d.cidade)}</span></button>`).join("")}
+    </div>
+    <div id="mapa-info"></div>
+    <div class="nota">Linha contínua: estrada ou trem · tracejada: voo. Toque num dia, ou num ponto do mapa, para ver o roteiro. O desenho do mapa precisa de internet; os lugares que você já viu ficam guardados.</div>
+  </main>`;
+  carregarLeaflet().then((L) => {
+    if (!document.getElementById("mapa")) return;
+    document.getElementById("mapa").innerHTML = "";
+    const m = L.map("mapa", { zoomControl: false, attributionControl: true, worldCopyJump: true });
+    L.control.zoom({ position: "bottomright" }).addTo(m);
+    L.tileLayer(`https://{s}.basemaps.cartocdn.com/${escuro ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
+      subdomains: "abcd", maxZoom: 18, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+    }).addTo(m);
+    const camadaRota = L.layerGroup().addTo(m), camadaPontos = L.layerGroup().addTo(m);
+    // rota entre as cidades, na ordem dos dias (pula repetições); trechos longos são voos
+    const paradas = [];
+    for (const d of R.dias) {
+      const c = d.hospedagem?.coords || (d.lat != null ? [d.lat, d.lon] : null);
+      const ll = d.lat != null ? [d.lat, d.lon] : c;
+      if (!ll) continue;
+      const ult = paradas[paradas.length - 1];
+      if (!ult || ult.cidade !== d.cidade) paradas.push({ ll, cidade: d.cidade, d });
+    }
+    const km = (a, b) => { const r = Math.PI / 180, x = Math.sin(((b[0] - a[0]) * r) / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(((b[1] - a[1]) * r) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
+    for (let k = 1; k < paradas.length; k++) {
+      const a = paradas[k - 1], b = paradas[k];
+      const voo = km(a.ll, b.ll) > 450;
+      L.polyline([a.ll, b.ll], { color: corDia(b.d).cor, weight: voo ? 2.5 : 4, opacity: 0.85, dashArray: voo ? "6 8" : null }).addTo(camadaRota);
+    }
+    const marcadores = [];
+    R.dias.forEach((d, i) => {
+      const cor = corDia(d).cor;
+      for (const p of pontosDoDia(d)) {
+        const href = p.n === "h" || p.n === -1 ? `#/dia/${d.data}` : `#/dia/${d.data}/${p.n}`;
+        const mk = L.circleMarker(p.ll, { radius: p.n === "h" ? 7 : 5.5, color: "#fff", weight: 2, fillColor: cor, fillOpacity: 1 })
+          .bindPopup(`<div class="mapa-pop"><small>Dia ${i + 1} · ${h(dataMedia(d.data))}</small><b>${h(p.t)}</b><a href="${href}">Ver no roteiro →</a></div>`)
+          .addTo(camadaPontos);
+        mk.on("click", () => escolher(d.data, false));
+        marcadores.push({ mk, d });
+      }
+    });
+    const todos = marcadores.map((x) => x.mk.getLatLng());
+    function escolher(iso, mover = true) {
+      history.replaceState(null, "", "#/mais/mapa" + (iso ? "/" + iso : ""));
+      document.querySelectorAll("#mapa-dias [data-dia]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.dia === (iso || ""))));
+      for (const { mk, d } of marcadores) mk.setStyle({ fillOpacity: !iso || d.data === iso ? 1 : 0.25, opacity: !iso || d.data === iso ? 1 : 0.35 });
+      const info = document.getElementById("mapa-info");
+      if (!iso) {
+        info.innerHTML = "";
+        if (mover) m.fitBounds(L.latLngBounds(todos), { padding: [24, 24] });
+        return;
+      }
+      const i = idxDia(iso), d = R.dias[i];
+      const pts = pontosDoDia(d);
+      if (mover) {
+        if (pts.length > 1) m.flyToBounds(L.latLngBounds(pts.map((p) => p.ll)), { padding: [36, 36], maxZoom: 14, duration: 0.8 });
+        else m.flyTo(pts[0].ll, 12, { duration: 0.8 });
+      }
+      info.innerHTML = `<a class="linha-lista mapa-dia" href="#/dia/${d.data}">
+        <div class="data-bloco-mini" style="${corBloco(corDia(d))}"><small>${h(SEM3[dataDe(d.data).getDay()])}</small><b>${h(d.data.slice(8))}</b></div>
+        <div class="meio"><div class="t">Dia ${i + 1} · ${h(d.cidade)}</div><div class="s">${pts.filter((p) => p.n !== -1).map((p) => h(p.t)).join(" · ") || "Sem lugares marcados"}</div></div>
+        <span class="seta">${I.seta}</span></a>`;
+      document.querySelector(`#mapa-dias [data-dia="${iso}"]`)?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+    }
+    MAPA = m;
+    document.querySelectorAll("#mapa-dias [data-dia]").forEach((b) => b.addEventListener("click", () => escolher(b.dataset.dia)));
+    m.fitBounds(L.latLngBounds(todos), { padding: [24, 24] });
+    if (sel && idxDia(sel) >= 0) escolher(sel);
+  }).catch(() => {
+    const el = document.getElementById("mapa");
+    if (el) el.innerHTML = '<div class="carregando">Não consegui abrir o mapa. Conecte uma vez à internet.</div>';
+  });
+}
 
 function topoSubapp(titulo) {
   return `<a class="voltar" href="#/mais">${I.voltar} Mais</a><h1 class="titulo-tela">${h(titulo)}</h1>`;
@@ -1367,6 +1495,17 @@ function telaMais() {
   </main>`;
 }
 
+/* índice de qualidade do ar (AQI, escala dos EUA) */
+const arDoDia = (dia) => TEMPO?.ar?.[dia.cidade]?.[dia.data] || null;
+function faixaAr(aqi) {
+  if (aqi <= 50) return { n: "bom", cor: "#0D7A48", dica: "" };
+  if (aqi <= 100) return { n: "moderado", cor: "#B8860B", dica: "" };
+  if (aqi <= 150) return { n: "ruim p/ sensíveis", cor: "#E9592C", dica: "Quem tem asma ou rinite: máscara na rua." };
+  if (aqi <= 200) return { n: "ruim", cor: "#C3122F", dica: "Use máscara N95 na rua e evite esforço ao ar livre." };
+  if (aqi <= 300) return { n: "muito ruim", cor: "#7B1FA2", dica: "Máscara N95 o tempo todo na rua; prefira programas em lugares fechados." };
+  return { n: "perigoso", cor: "#6D1B2B", dica: "Evite ficar ao ar livre; máscara N95 sempre." };
+}
+const etiquetaAr = (a) => { const f = faixaAr(a.aqi); return `<span class="ar-etq"><i style="background:${f.cor}"></i>ar ${h(f.n)} (${Math.round(a.aqi)})</span>`; };
 function telaTempo() {
   const hoje = hojeISO();
   const futuros = R.dias.filter((d) => d.data >= hoje);
@@ -1382,13 +1521,14 @@ function telaTempo() {
       return `<a class="linha-lista" href="#/mais/tempo/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${d.data > limite ? "Previsão a partir de " + h(dataMedia(libera)) : "Previsão indisponível agora"}</div>${linhaSol}</div></a>`;
     }
     const [ic, txt] = climaDe(t.cod);
-    return `<a class="linha-lista" href="#/mais/tempo/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div>${linhaSol}</div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
+    return `<a class="linha-lista" href="#/mais/tempo/${d.data}">${bloco}<div class="meio"><div class="t">${h(d.cidade)}</div><div class="s">${h(txt)}${t.chuva != null ? ` · chuva ${t.chuva}%` : ""}</div>${arDoDia(d) ? `<div class="s">${etiquetaAr(arDoDia(d))}</div>` : ""}${linhaSol}</div><div class="tempo-dia">${TEMPO_ICONES[ic]}<b>${Math.round(t.max)}°</b><span>${Math.round(t.min)}°</span></div></a>`;
   }).join("");
   $app.innerHTML = `
   <main class="tela">
     ${topoSubapp("Tempo")}
     <div class="lista">${previsao || '<div class="nota">A viagem já acabou.</div>'}</div>
-    <div class="nota">Toque num dia para ver a previsão hora a hora. Previsão para a cidade de cada dia; sai até 16 dias antes. Nascer e pôr do sol no horário local de cada cidade. ${TEMPO ? "Atualizada em " + new Date(TEMPO.em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) + "." : "Abra com internet para baixar."}</div>
+    <div class="nota">Toque num dia para ver a previsão hora a hora. Previsão para a cidade de cada dia; sai até 16 dias antes. Nascer e pôr do sol no horário local de cada cidade. Qualidade do ar (AQI) aparece para os próximos dias, quando há previsão.</div>
+    <div class="nota fonte-tempo">${TEMPO ? `Atualizado do Open-Meteo às ${new Date(TEMPO.em).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} do dia ${new Date(TEMPO.em).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}.` : "Abra com internet para baixar a previsão do Open-Meteo."}</div>
   </main>`;
 }
 
@@ -1400,6 +1540,7 @@ function telaTempoDia(iso) {
   const p = corDia(dia);
   const t = tempoDoDia(dia);
   const sol = textoSol(dia);
+  const arDia = arDoDia(dia);
   const ant = R.dias[i - 1], prox = R.dias[i + 1];
   const horaHoje = iso === new Intl.DateTimeFormat("en-CA", { timeZone: dia.fuso }).format(new Date()) ? Number(horaEm(dia.fuso).slice(0, 2)) : -1;
   const marcos = {};
@@ -1428,7 +1569,9 @@ function telaTempoDia(iso) {
         <div><small>Chuva</small><b>${t.chuva ?? "—"}%</b>${t.mm != null ? `<span>${fmtMm(t.mm)} mm</span>` : ""}</div>
         <div><small>Vento máx.</small><b>${t.vento != null ? Math.round(t.vento) : "—"}</b><span>km/h</span></div>
         <div><small>UV máx.</small><b>${t.uv != null ? Math.round(t.uv) : "—"}</b><span>${t.uv == null ? "" : t.uv >= 8 ? "muito alto" : t.uv >= 6 ? "alto" : t.uv >= 3 ? "moderado" : "baixo"}</span></div>
+        ${arDia ? `<div><small>Ar (AQI)</small><b>${Math.round(arDia.aqi)}</b><span><i class="ar-ponto" style="background:${faixaAr(arDia.aqi).cor}"></i>${h(faixaAr(arDia.aqi).n)}</span></div>` : ""}
       </div>
+      ${arDia && faixaAr(arDia.aqi).dica ? `<div class="ar-dica"><i style="background:${faixaAr(arDia.aqi).cor}"></i>${h(faixaAr(arDia.aqi).dica)}</div>` : ""}
       ${sol ? `<div class="tempo-sol">${SOL_ICONES.nasce} nasce ${sol.nasce} · ${SOL_ICONES.poe} se põe ${sol.poe}</div>` : ""}
     </section>
     ${horas.length ? `
@@ -1869,7 +2012,7 @@ async function forcarAtualizacao() {
   try {
     // pergunta direto à fonte qual é a versão publicada (pulando a cópia de 10 min do GitHub Pages)
     const txt = await (await fetch("app.js?_=" + Date.now(), { cache: "no-store" })).text();
-    const publicada = (txt.match(/VERSAO_APP = "(v\d+)"/) || [])[1];
+    const publicada = (txt.match(/VERSAO_APP = "([^"]+)"/) || [])[1];
     if (publicada && publicada === VERSAO_APP) { if (b) { b.disabled = false; b.textContent = "Atualizar agora"; } return avisar("O app já está na versão mais nova (" + VERSAO_APP + ")."); }
     if (navigator.serviceWorker && publicada) {
       // registra o service worker da versão nova e espera ele assumir (até 15 s)
@@ -2034,7 +2177,7 @@ function telaFrases() {
     </div>
     <div class="frases">
       ${FRASES.map((f, i) => `
-        <div class="frase">
+        <div class="frase" role="link" tabindex="0" data-cartao="${i}" aria-label="Mostrar em tela cheia: ${h(f[0])}">
           <div class="frase-pt">${h(f[0])}</div>
           <div class="frase-orig" lang="${L.id}">${h(f[col][0])}</div>
           <div class="frase-pron">${h(f[col][1])}</div>
@@ -2044,7 +2187,49 @@ function telaFrases() {
     <div class="nota">A pronúncia está escrita do jeito que se lê em português; a sílaba com acento é a mais forte. O botão de ouvir usa a voz do próprio celular${L.id === "ne" ? " (o nepalês sai com a voz do hindi, que usa a mesma escrita)" : ""}. Se ficar mudo, instale a voz do idioma nas configurações de texto para fala.</div>
   </main>`;
   $app.querySelectorAll("[data-lingua]").forEach((b) => b.addEventListener("click", () => { frasesLingua = b.dataset.lingua; telaFrases(); }));
-  $app.querySelectorAll("[data-falar]").forEach((b) => b.addEventListener("click", () => falar(FRASES[Number(b.dataset.falar)][col][0], L)));
+  $app.querySelectorAll("[data-falar]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); falar(FRASES[Number(b.dataset.falar)][col][0], L); }));
+  const abrir = (el) => { try { sessionStorage.setItem("indaly.veio-frases", "1"); } catch {} location.hash = `#/mais/frases/${L.id}-${el.dataset.cartao}`; };
+  $app.querySelectorAll("[data-cartao]").forEach((el) => {
+    el.addEventListener("click", () => abrir(el));
+    el.addEventListener("keydown", (e) => { if (e.key === "Enter") abrir(el); });
+  });
+}
+/* cartão de mostrar: a frase em letra grande, para virar o celular para a pessoa */
+function telaFraseCartao(chave) {
+  const [lid, n] = chave.split("-");
+  const L = LINGUAS.find((l) => l.id === lid), i = Number(n), f = FRASES[i];
+  if (!L || !f) return (location.hash = "#/mais/frases");
+  frasesLingua = L.id;
+  const col = LINGUAS.indexOf(L) + 1;
+  const p = PAISES[L.pais];
+  const ant = (i - 1 + FRASES.length) % FRASES.length, prox = (i + 1) % FRASES.length;
+  $app.innerHTML = `
+  <main class="motorista frase-cartao" lang="${L.id}" style="--pais:${p.cor};--pais-txt:${p.claro ? "#14224F" : "#fff"}">
+    <div class="motorista-topo">
+      <span>${h(L.nome)} · ${i + 1} de ${FRASES.length}</span>
+      <button type="button" class="motorista-fechar" id="frase-fechar" aria-label="Fechar">✕</button>
+    </div>
+    <div class="motorista-corpo">
+      <div class="frase-grande">${h(f[col][0])}</div>
+      <div class="frase-grande-pron" lang="pt-BR">${h(f[col][1])}</div>
+      <hr>
+      <div class="frase-grande-pt" lang="pt-BR">${h(f[0])}</div>
+    </div>
+    <button type="button" class="botao motorista-falar" id="frase-falar">${I_OUVIR} Falar ${{ hi: "em hindi", ne: "em nepalês", it: "em italiano" }[L.id]}</button>
+    <div class="frase-nav">
+      <a class="botao botao-claro" href="#/mais/frases/${L.id}-${ant}" data-trocar>${I.voltar} Anterior</a>
+      <a class="botao botao-claro" href="#/mais/frases/${L.id}-${prox}" data-trocar>Próxima ${I.seta}</a>
+    </div>
+  </main>`;
+  document.getElementById("frase-falar").addEventListener("click", () => falar(f[col][0], L));
+  // anterior/próxima trocam a frase sem empilhar histórico: o ✕ volta direto para a lista
+  $app.querySelectorAll("[data-trocar]").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); location.replace(a.getAttribute("href")); }));
+  document.getElementById("frase-fechar").addEventListener("click", () => {
+    let veio = false;
+    try { veio = sessionStorage.getItem("indaly.veio-frases") === "1"; sessionStorage.removeItem("indaly.veio-frases"); } catch {}
+    if (veio && history.length > 1) history.back();
+    else location.replace("#/mais/frases");
+  });
 }
 
 /* ---------- Mala (checklist; cada celular guarda o seu) ---------- */
@@ -2236,7 +2421,7 @@ function rotearTela() {
   if (!R) return;
   const partes = (location.hash || "#/hoje").slice(2).split("/");
   const [rota, a, b] = partes;
-  $abas.hidden = rota === "motorista";
+  $abas.hidden = rota === "motorista" || (rota === "mais" && a === "frases" && !!b);
   if (rota === "motorista") return telaMotorista(a, b);
   if (rota === "dia" && a && b !== undefined) { marcarAba("roteiro"); return telaAtividade(a, Number(b)); }
   if (rota === "dia" && a) { marcarAba("roteiro"); return telaDia(a); }
