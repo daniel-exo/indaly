@@ -43,9 +43,10 @@
 }
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }
-/* o deslize entre dias empurra #app para o lado: a página não pode ficar mais larga que a tela, senão a barra de baixo pula junto */
-body { overflow-x: hidden; }
+html { -webkit-text-size-adjust: 100%; }
+/* o deslize entre dias empurra #app para o lado; a moldura corta só na horizontal (clip não cria área de rolagem,
+   então a página continua rolando para baixo no iPhone) e a barra de baixo não pula */
+.moldura { overflow-x: clip; }
 body {
   margin: 0;
   background: var(--papel);
@@ -895,3 +896,5 @@ svg.cao, svg.icone-cao { stroke: none; flex-shrink: 0; }
 /* o estilo geral de ícones (svg 1em, sem preenchimento) não pode valer dentro do mapa */
 .leaflet-container svg { width: auto; height: auto; fill: revert; stroke: revert; stroke-width: revert; }
 .leaflet-container .leaflet-zoom-animated { will-change: transform; }
+
+.mapa-escuro { filter: invert(1) hue-rotate(180deg) brightness(0.9) contrast(0.9); }

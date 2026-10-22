@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "2.00"; // versão do app: 2.00, 2.01… (sw.js usa "indaly-" + este número)
+const VERSAO_APP = "2.01"; // versão do app: 2.00, 2.01… (sw.js usa "indaly-" + este número)
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -1415,8 +1415,9 @@ function telaMapa(sel) {
     document.getElementById("mapa").innerHTML = "";
     const m = L.map("mapa", { zoomControl: false, attributionControl: true, worldCopyJump: true });
     L.control.zoom({ position: "bottomright" }).addTo(m);
-    L.tileLayer(`https://{s}.basemaps.cartocdn.com/${escuro ? "dark_all" : "light_all"}/{z}/{x}/{y}{r}.png`, {
-      subdomains: "abcd", maxZoom: 18, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · © <a href="https://carto.com/attributions">CARTO</a>',
+    // fundo do OpenStreetMap (sem chave); no tema escuro, o próprio app escurece as imagens
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19, className: escuro ? "mapa-escuro" : "", attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     }).addTo(m);
     const camadaRota = L.layerGroup().addTo(m), camadaPontos = L.layerGroup().addTo(m);
     // rota entre as cidades, na ordem dos dias (pula repetições); trechos longos são voos
