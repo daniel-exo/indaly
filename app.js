@@ -1,6 +1,6 @@
 import { Decrypter } from "./vendor/age.js";
 
-const VERSAO_APP = "2.01"; // versão do app: 2.00, 2.01… (sw.js usa "indaly-" + este número)
+const VERSAO_APP = "2.02"; // versão do app: 2.00, 2.01… (sw.js usa "indaly-" + este número)
 
 /* ---------- utilidades ---------- */
 const $app = document.getElementById("app");
@@ -134,10 +134,48 @@ function utcTexto(tz, quando) {
 }
 
 /* ---------- cofre ---------- */
+// Arquivo trancado de verdade começa com este cabeçalho; página de login de wi-fi, não.
+const CAB_AGE = "age-encryption.org/v1";
+const ehAge = (b) => b && b.length > CAB_AGE.length && String.fromCharCode(...b.subarray(0, CAB_AGE.length)) === CAB_AGE;
+async function bytesGuardados(url) {
+  if (!("caches" in window)) return null;
+  try {
+    const r = await caches.match(new URL(url, location.href).href, { ignoreSearch: true });
+    if (!r) return null;
+    const b = new Uint8Array(await r.arrayBuffer());
+    return ehAge(b) ? b : null;
+  } catch { return null; }
+}
+// confere só o começo da cópia guardada (rápido, sem ler o documento inteiro)
+async function guardadoIntegro(url) {
+  if (!("caches" in window)) return false;
+  try {
+    const r = await caches.match(new URL(url, location.href).href, { ignoreSearch: true });
+    if (!r) return false;
+    if (!r.body?.getReader) return ehAge(new Uint8Array(await r.arrayBuffer()));
+    const leitor = r.body.getReader();
+    let junto = new Uint8Array(0);
+    while (junto.length <= CAB_AGE.length) {
+      const { value, done } = await leitor.read();
+      if (done) break;
+      const n = new Uint8Array(junto.length + value.length); n.set(junto); n.set(value, junto.length); junto = n;
+    }
+    leitor.cancel().catch(() => {});
+    return ehAge(junto);
+  } catch { return false; }
+}
 async function buscarBytes(url) {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Não consegui baixar " + url);
-  return new Uint8Array(await res.arrayBuffer());
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const b = new Uint8Array(await res.arrayBuffer());
+      if (ehAge(b)) return b;
+    }
+  } catch {}
+  // sem rede, ou a rede devolveu outra coisa: usa a cópia guardada neste celular
+  const g = await bytesGuardados(url);
+  if (g) return g;
+  throw new Error("Não consegui baixar " + url);
 }
 async function decifrar(bytes, comoTexto) {
   const d = new Decrypter();
@@ -145,7 +183,15 @@ async function decifrar(bytes, comoTexto) {
   return comoTexto ? d.decrypt(bytes, "text") : d.decrypt(bytes);
 }
 async function carregarRoteiro() {
-  const texto = await decifrar(await buscarBytes("cofre/roteiro.age"), true);
+  let texto;
+  try {
+    texto = await decifrar(await buscarBytes("cofre/roteiro.age"), true);
+  } catch (e) {
+    // a cópia guardada pode estar boa mesmo que a da rede não esteja
+    const g = await bytesGuardados("cofre/roteiro.age");
+    if (!g) throw e;
+    texto = await decifrar(g, true);
+  }
   R = JSON.parse(texto);
   const anterior = lerLS(LS_VERSAO);
   if (anterior && anterior !== R.atualizado_em) avisar(`Roteiro atualizado em ${new Date(R.atualizado_em).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}.`);
@@ -155,21 +201,35 @@ async function carregarCambio() {
   try { CAMBIO = await (await fetch("cambio.json")).json(); } catch { CAMBIO = null; }
 }
 
+// Guarda neste celular todos os documentos do roteiro e confere se cada cópia guardada está íntegra.
 async function guardarOffline() {
   if (!("caches" in window)) return;
+  try { navigator.storage?.persist?.(); } catch {} // pede ao sistema para não apagar o guardado quando faltar espaço
   try {
-    const v = await (await fetch("cofre/versao.json")).json();
-    OFFLINE.total = v.arquivos.length;
+    const arqs = [...new Set(Object.values(R.docs).map((d) => d.arquivo).filter(Boolean))];
+    OFFLINE.total = arqs.length;
     OFFLINE.prontos = 0;
-    for (const arq of v.arquivos) {
-      const ja = await caches.match(arq);
-      if (!ja) { try { await fetch(arq); } catch {} }
-      if (await caches.match(arq)) OFFLINE.prontos++;
+    OFFLINE.terminou = false;
+    const dados = await caches.open("indaly-dados");
+    for (const arq of arqs) {
+      const url = new URL(arq, location.href).href;
+      if (!(await guardadoIntegro(arq))) {
+        await dados.delete(url, { ignoreSearch: true }); // cópia estragada (ex.: página de login do wi-fi)
+        if (navigator.onLine) { try { await fetch(arq); } catch {} }
+      }
+      if (await guardadoIntegro(arq)) OFFLINE.prontos++;
       if (location.hash.startsWith("#/carteira")) atualizarEstadoCofre();
     }
-  } catch {}
+  } catch (e) { console.error(e); }
   OFFLINE.terminou = true;
   if (location.hash.startsWith("#/carteira")) atualizarEstadoCofre();
+  if (location.hash.startsWith("#/hoje") || location.hash === "") { const el = document.getElementById("aviso-offline"); if (el) el.outerHTML = avisoOffline(); }
+}
+// no Hoje: avisa quando ainda falta guardar documento neste celular
+function avisoOffline() {
+  if (!OFFLINE.terminou || !OFFLINE.total || OFFLINE.prontos >= OFFLINE.total) return '<div id="aviso-offline" hidden></div>';
+  const falta = OFFLINE.total - OFFLINE.prontos;
+  return `<a id="aviso-offline" class="tarefa" href="#/carteira"><span class="meio"><b>${I.pendente}${falta === 1 ? "Falta 1 documento" : `Faltam ${falta} documentos`} para a Carteira funcionar sem internet</b><span>Abra o app com wi-fi bom e espere a Carteira mostrar ${OFFLINE.total} de ${OFFLINE.total}.</span></span><span class="tarefa-ir">${I.seta}</span></a>`;
 }
 
 /* ---------- previsão do tempo (Open-Meteo, sem chave) ---------- */
@@ -290,6 +350,7 @@ let pdfjs = null;
 
 function fecharVisor() {
   $visor.hidden = true;
+  $visorCorpo.querySelectorAll("canvas").forEach((c) => { c.width = 0; c.height = 0; }); // iPhone libera a memória na hora
   $visorCorpo.innerHTML = "";
   if (urlAtual) { URL.revokeObjectURL(urlAtual); urlAtual = null; }
   document.body.style.overflow = "";
@@ -310,7 +371,7 @@ function rotuloArquivo(nome) {
 /* Visor de PDF com zoom (pinça ou toque duplo). Ao soltar, redesenha as páginas na resolução do zoom,
    para QR codes e códigos de barras ficarem nítidos como num leitor de PDF. */
 const ZOOM_MAX = 4;
-const PIXELS_MAX = 12e6; // por página; limite seguro para canvas em celulares
+const PIXELS_MAX = 8e6; // por página; o iPhone tem um teto de memória somando todos os canvases
 async function visorPdf(pdf) {
   $visorCorpo.innerHTML = '<div class="paginas"><div class="paginas-conteudo"></div></div><div class="visor-dica">Aproxime com dois dedos ou toque duas vezes</div>';
   const $rolo = $visorCorpo.querySelector(".paginas");
@@ -320,9 +381,10 @@ async function visorPdf(pdf) {
   const paginas = [];
   let zoom = 1, geracao = 0;
   const cssLargura = () => largura * zoom;
-  async function desenhar(p, gen) {
+  // só as páginas na tela ganham a resolução do zoom; as outras ficam na resolução normal (economiza memória)
+  async function desenhar(p, gen, z = zoom) {
     const base = p.pag.getViewport({ scale: 1 });
-    let esc = (cssLargura() / base.width) * dpr;
+    let esc = ((largura * z) / base.width) * dpr;
     const area = base.width * base.height * esc * esc;
     if (area > PIXELS_MAX) esc *= Math.sqrt(PIXELS_MAX / area);
     if (p.esc && Math.abs(p.esc - esc) < 0.01) return;
@@ -341,12 +403,9 @@ async function visorPdf(pdf) {
     const gen = ++geracao;
     const topo = $rolo.scrollTop, alt = $rolo.clientHeight;
     // primeiro as páginas visíveis, depois as outras
-    const ordem = [...paginas].sort((a, b) => {
-      const va = a.c.offsetTop + a.c.offsetHeight > topo && a.c.offsetTop < topo + alt ? 0 : 1;
-      const vb = b.c.offsetTop + b.c.offsetHeight > topo && b.c.offsetTop < topo + alt ? 0 : 1;
-      return va - vb;
-    });
-    for (const p of ordem) { if (gen !== geracao || $visor.hidden) return; await desenhar(p, gen); }
+    const naTela = (p) => p.c.offsetTop + p.c.offsetHeight > topo - alt * 0.5 && p.c.offsetTop < topo + alt * 1.5;
+    const ordem = [...paginas].sort((a, b) => (naTela(a) ? 0 : 1) - (naTela(b) ? 0 : 1));
+    for (const p of ordem) { if (gen !== geracao || $visor.hidden) return; await desenhar(p, gen, naTela(p) ? zoom : 1); }
   }
   function aplicarZoom(novo, fx, fy) {
     // fx, fy: ponto da tela (relativo ao rolo) que deve ficar parado
@@ -374,6 +433,9 @@ async function visorPdf(pdf) {
     paginas.push(p);
     await desenhar(p, geracao);
   }
+  // ampliado: ao rolar, as páginas que entram na tela ganham nitidez
+  let espera = null;
+  $rolo.addEventListener("scroll", () => { if (zoom <= 1.01) return; clearTimeout(espera); espera = setTimeout(redesenhar, 250); }, { passive: true });
   // gestos
   let pinca = null, ultimoToque = 0, ultimoXY = null;
   const dist = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
@@ -425,7 +487,12 @@ async function abrirDoc(id) {
   document.body.style.overflow = "hidden";
   document.getElementById("visor-fechar").focus();
   try {
-    const bytes = await decifrar(await buscarBytes(doc.arquivo));
+    let bytes;
+    try { bytes = await decifrar(await buscarBytes(doc.arquivo)); } catch (e1) {
+      await window.caches?.open("indaly-dados").then((c) => c.delete(new URL(doc.arquivo, location.href).href)).catch(() => {});
+      if (!navigator.onLine) throw e1;
+      bytes = await decifrar(await buscarBytes(doc.arquivo));
+    }
     const blob = new Blob([bytes], { type: doc.tipo });
     urlAtual = URL.createObjectURL(blob);
     $visorAbrir.href = urlAtual;
@@ -598,7 +665,7 @@ function telaBloqueio(msg = "") {
     const senha = f.senha.value.trim();
     const $erro = f.querySelector(".erro");
     const $b = f.querySelector("button");
-    $b.disabled = true; $b.textContent = "Abrindo o cofre…"; $erro.textContent = "";
+    $b.disabled = true; $b.textContent = "Abrindo o cofre… (alguns segundos)"; $erro.textContent = "";
     try {
       const bytes = await buscarBytes("cofre/chave.age");
       const d = new Decrypter();
@@ -822,6 +889,7 @@ function telaHoje() {
       <div class="marca">${caoSVG(30)}<span>Indaly</span></div>
       <div class="relogios">${tzLocal === "America/Sao_Paulo" ? `<b>${horaEm("America/Sao_Paulo")} São Paulo</b>` : relogios(tzLocal, nomeLocal)}</div>
     </div>
+    ${avisoOffline()}
     ${tarefasHoje(hoje)}
     ${corpo}
     ${instalado() ? "" : `<a class="linha-lista convite" href="#/mais/instalar"><span class="subapp-icone mini" style="background:#C3122F"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg></span><div class="meio"><div class="t">Instale o Indaly como app</div><div class="s">Ícone na tela inicial e sem barra de endereço</div></div><span class="seta">${I.seta}</span></a>`}
@@ -2468,11 +2536,15 @@ async function iniciar() {
       // o roteiro abriu; o erro foi de tela: não apaga a chave
       $app.innerHTML = '<div class="carregando">Algo deu errado ao abrir esta tela.<br><a href="#/hoje">Voltar para Hoje</a></div>';
       $abas.hidden = false;
-    } else if (String(e).includes("fetch") || String(e).includes("baixar") || !navigator.onLine) {
-      $app.innerHTML = '<div class="carregando">Sem internet e sem cópia guardada do roteiro.<br>Conecte uma vez para baixar.</div>';
     } else {
-      apagarLS(LS_CHAVE);
-      telaBloqueio("A chave do cofre mudou. Digite a senha nova.");
+      // nunca apaga a chave sozinho: uma rede ruim não pode trancar ninguém para fora
+      const semCopia = String(e).includes("baixar");
+      $app.innerHTML = `<main class="bloqueio"><div class="marca">${caoSVG(72)}<h1>Indaly</h1></div>
+        <p>${semCopia ? "Não achei o roteiro neste celular e não consegui baixar agora. Conecte a um wi-fi bom e tente de novo." : "Não consegui abrir o roteiro agora. Se a rede estiver ruim, tente de novo daqui a pouco."}</p>
+        <button class="botao botao-papel" type="button" id="tentar-de-novo">Tentar de novo</button>
+        ${semCopia ? "" : '<button class="rodape-acao" type="button" id="digitar-senha">A senha do grupo mudou? Digitar a senha</button>'}</main>`;
+      document.getElementById("tentar-de-novo").onclick = () => location.reload();
+      document.getElementById("digitar-senha")?.addEventListener("click", () => { apagarLS(LS_CHAVE); IDENT = null; telaBloqueio(); });
     }
   }
 }

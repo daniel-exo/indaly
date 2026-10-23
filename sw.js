@@ -1,5 +1,5 @@
 // Service worker do Indaly: guarda o app e o cofre para funcionar sem internet.
-const VERSAO = "indaly-2.01";
+const VERSAO = "indaly-2.02";
 const CASCA = [
   "./",
   "index.html",
@@ -98,12 +98,37 @@ const CACHE_CASCA = VERSAO + "-casca";
 const fresco = (u) => { const x = new URL(typeof u === "string" ? u : u.url, self.location.href); x.searchParams.set("_", Date.now()); return x.href; };
 const CACHE_DADOS = "indaly-dados"; // sobrevive a atualizações do app
 
+/* Wi-fi de hotel/aeroporto com página de login responde a qualquer pedido com a página dele (às vezes com 200).
+   Nada é guardado nem entregue ao app sem passar por esta conferência. */
+const AGE = "age-encryption.org/v1";
+async function valido(res, url) {
+  if (!res || !res.ok || res.redirected || res.type === "opaqueredirect") return false;
+  const p = new URL(url, self.location.href).pathname;
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  try {
+    if (/\.age$/.test(p)) {
+      const b = new Uint8Array(await res.clone().arrayBuffer(), 0, AGE.length);
+      return String.fromCharCode(...b) === AGE;
+    }
+    if (/\.(m?js|css)$/.test(p)) { if (ct.includes("html")) return false; const t = (await res.clone().text()).trimStart(); return t.length > 0 && t[0] !== "<"; }
+    if (/\.(json|webmanifest)$/.test(p)) return !ct.includes("html") && !!JSON.parse(await res.clone().text());
+    if (/(\/|index\.html)$/.test(p)) return ct.includes("html") && (await res.clone().text()).includes('id="app"');
+    return !ct.includes("text/html"); // imagens, fontes
+  } catch { return false; }
+}
+const semRede = () => self.navigator && self.navigator.onLine === false;
+async function buscar(req, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try { return await fetch(fresco(req), { cache: "no-store", signal: ctrl.signal }); } finally { clearTimeout(t); }
+}
+
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_CASCA)
       // o essencial precisa baixar; o resto (ícones, fontes) não derruba a atualização se falhar
       .then((c) => Promise.all(CASCA.map((u) => {
-        const p = fetch(fresco(u), { cache: "no-store" }).then((r) => { if (!r.ok) throw new Error(u); return c.put(u, r); });
+        const p = fetch(fresco(u), { cache: "no-store" }).then(async (r) => { if (!(await valido(r, u))) throw new Error(u); return c.put(u, r); });
         return ESSENCIAL.includes(u) ? p : p.catch(() => null);
       })))
       .then(() => self.skipWaiting())
@@ -127,41 +152,42 @@ const DOCS = /\/cofre\/d\/[0-9a-f]+\.age$/;
 
 async function redePrimeiro(req) {
   const cache = await caches.open(CACHE_DADOS);
+  const salvo = () => cache.match(req, { ignoreSearch: true });
+  if (semRede()) { const s = await salvo(); if (s) return s; }
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 6000);
-    const res = await fetch(fresco(req), { cache: "no-store", signal: ctrl.signal });
-    clearTimeout(t);
-    if (res.ok) await cache.put(req, res.clone());
-    return res;
+    const res = await buscar(req, 6000);
+    if (await valido(res, req.url)) { await cache.put(req, res.clone()); return res; }
+    return (await salvo()) || res;
   } catch (err) {
-    const salvo = await cache.match(req);
-    if (salvo) return salvo;
+    const s = await salvo();
+    if (s) return s;
     throw err;
   }
 }
 
+// documentos trancados e pedaços do mapa: o guardado vale para sempre; só entra no guardado o que passou na conferência
 async function cachePrimeiro(req) {
   const cache = await caches.open(CACHE_DADOS);
   const salvo = await cache.match(req);
   if (salvo) return salvo;
   const res = await fetch(req);
-  if (res.ok || res.type === "opaque") await cache.put(req, res.clone());
+  if (res.type === "opaque" || (await valido(res, req.url))) await cache.put(req, res.clone());
   return res;
 }
 
 // App (html, js, css): tenta a rede primeiro para as mudanças aparecerem logo; sem rede, usa o guardado.
 async function casca(req) {
   const cache = await caches.open(CACHE_CASCA);
+  const salvo = async () => (await cache.match(req, { ignoreSearch: true })) || (req.mode === "navigate" || /index\.html$|\/$/.test(req.url) ? await cache.match("index.html") : undefined);
+  if (semRede()) { const s = await salvo(); if (s) return s; }
   try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 4000);
-    const res = await fetch(fresco(req), { cache: "no-store", signal: ctrl.signal });
-    clearTimeout(t);
-    if (res.ok) cache.put(req, res.clone());
-    return res;
+    const res = await buscar(req, 4000);
+    if (await valido(res, req.url)) { cache.put(req, res.clone()); return res; }
+    return (await salvo()) || res;
   } catch (err) {
-    return (await cache.match(req, { ignoreSearch: true })) || (await cache.match("index.html"));
+    const s = await salvo();
+    if (s) return s;
+    throw err;
   }
 }
 
@@ -175,7 +201,7 @@ self.addEventListener("fetch", (e) => {
   if (url.origin !== self.location.origin) return;
   if (DOCS.test(url.pathname)) return e.respondWith(cachePrimeiro(req));
   if (VIVOS.test(url.pathname)) return e.respondWith(redePrimeiro(req));
-  if (/\/(fonts|vendor|icons)\//.test(url.pathname)) return e.respondWith(caches.open(CACHE_CASCA).then(async (c) => (await c.match(req)) || fetch(req).then((r) => { if (r.ok) c.put(req, r.clone()); return r; })));
+  if (/\/(fonts|vendor|icons)\//.test(url.pathname)) return e.respondWith(caches.open(CACHE_CASCA).then(async (c) => (await c.match(req, { ignoreSearch: true })) || fetch(req).then(async (r) => { if (await valido(r, req.url)) c.put(req, r.clone()); return r; })));
   if (req.mode === "navigate") return e.respondWith(casca(new Request("index.html")));
   e.respondWith(casca(req));
 });
